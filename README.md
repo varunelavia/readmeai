@@ -1,108 +1,88 @@
-# README.md
+# README.md for README.ai - AI-Powered README Generator
 
-## READMEai - AI-Powered README Generator
+## Project Title
 
-### Table of Contents
-1. [Description](#description)
-2. [Features](#features)
-3. [Requirements](#requirements)
-4. [Installation](#installation)
-5. [Usage](#usage)
-6. [Configuration](#configuration)
-7. [API Keys](#api-keys)
-8. [AI Model Selection and Validation](#ai-model-selection-and-validation)
-9. [Running with Docker](#running-with-docker)
-10. [Contributions](#contributions)
-11. [License](#license)
-12. [Contact](#contact)
+**README.ai - AI-Powered README Generator**
 
-### Description
+## Description
 
-READMEai is a command-line tool developed in Python, that uses various AI services (OpenAI, Anthropic, Google Gemini) to generate comprehensive README.md files for your projects from the given codebase. 
+The repository consists of a command-line tool "README.ai", which uses various AI services (OpenAI, Anthropic, Google Gemini) to auto-generate comprehensive README.md files for your projects. The script analyzes your directory's files, building a prompt from the contents, which is then sent to the chosen AI for content generation.
 
-This tool takes in a directory, reads through the files, and uses AI to generate a detailed README that includes project title, description, how to install and use the project, features, technologies used and so on, based on the analysed codebase.
+The README.ai is capable of analyzing different codebases and making intelligent decisions to generate high-quality READMEs. Additionally, this script allows the use of multiple AI providers and comes equipped with features such as smart file filtering, configurable settings and API keys, and an integrated retry mechanism for better API reliability.
 
-### Features
-- Generate detailed READMEs automatically from your codebase
-- Support for multiple AI providers (Google Gemini, Anthropic, OpenAI)
-- Configurable settings and API keys
-- Smart file filtering and context gathering
-- Retry mechanism for API reliability
-- Docker support for easy setup and execution
+## Features
 
-### Requirements
-The main requirements are the following:
-- Python 3.8+
-- OpenAI 1.82.1
-- Google GenerativeAI 0.8.5
-- Anthropic 0.52.1
+- Generate README files from existing project files
+- Support for multiple AI providers like OpenAI, Anthropic, Google Gemini
+- User-configurable settings and API keys
+- Gathers context by smart file filtering
+- Retry mechanism for handling API unreliability
 
-For the full list of dependencies, please see the requirements.txt file.
+## Tech Stack/Requirements
 
-### Installation
+The project is predominantly created using Python. The libraries used primarily include OpenAI, Anthropic, and google.generativeai (as genai). A Dockerfile is present to containerize the application, suggesting deployment through a Docker runtime environment. The API key for AI services needs to be provided either as an environment variable or a command-line argument.
 
-Clone the repository and install all necessary packages:
+## Installation
 
+Please follow the below instructions to set up README.ai on your local system:
+
+1. Clone the repository into your local system using git clone command.
 ```bash
-git clone https://github.com/yourusername/readmeai.git
+git clone https://github.com/varunelavia/readmeai.git
+```
+2. Navigate to the cloned repository.
+```bash
 cd readmeai
-pip install -r requirements.txt
 ```
-
-### Usage
-
-To generate a README file for a supplied directory, you can run the following command:
-
+3. Create a virtual environment (Optional but Recommended).
 ```bash
-python readmeai.py generate /path/to/your/project
+python3 -m venv myenv
 ```
-
-Numerous optional arguments are available to control functionality. You can view them by using the help command:
-
+4. Activate the virtual environment. For Unix or MacOS system,
+```bash
+source myenv/bin/activate
+```
+5. Install the required dependencies.
+``` bash
+pip install openai anthropic google-cloud-aiplatform
+```
+6. Set the required environment variables:
+```bash
+export API_KEY='your_api_key'
+```
+7. You're set to use README.ai. Run it with the `--help` argument to see its usage:
 ```bash
 python readmeai.py --help
 ```
 
-### Configuration
+For docker installation, use the Dockerfile provided in the repository.
 
-Configure the tool using the configure command:
+## Usage
 
-```bash
-python readmeai.py configure
-```
+You can use the `readmeai.py` script to generate README files from your existing project files. 
 
-### API Keys
-
-In order to use any of the supported APIs (Gemini, Anthropic, OpenAI), you'll need to provide an API key. API keys can be provided via the command line (`--api-key YOUR_API_KEY`), as an environment variable (`export API_KEY='YOUR_API_KEY'`), or through the tool’s configuration command.
-
-### AI Model Selection and Validation
-
-You can also specify which AI model you want to use by passing the `--default-model` and `--default-api` arguments during the configuration step. The tool ensures the chosen model exists within the specified API before starting the generations process.
-
-### Running with Docker
-
-For Docker users, a Dockerfile has been provided:
-
-Build the Docker image:
+Here is an example of how one might invoke it:
 
 ```bash
-docker build -t readmeai .
+python readmeai.py generate path_to_your_directory
 ```
 
-Run the tool:
+You can provide additional flags as per your requirements. Type `python readmeai.py --help` to see the list of accepted flags.
+
+For instance, you can specify a different AI service provider using the `--api` flag like so:
 
 ```bash
-docker run -v ${PWD}:/app readmeai generate /app/your-directory-to-analyze
+python readmeai.py generate path_to_directory --api anthropic
 ```
 
-### Contributions
+Please replace `path_to_directory` with the path to your project directory.
 
-This project welcomes contributions from the open source community. To contribute, just fork this repository, make your changes and create a pull request.
+## Configuration
 
-### License
+You can configure the `readmeai.py` script using the `configure` command:
 
-This section is yet to be generated. The developer can fill it as per the chosen license.
+```bash
+python readmeai.py configure --api-key YOUR_API_KEY --default-api openai --default-model text-davinci-002
+```
 
-### Contact
-
-For any further queries, issues or suggestions, feel free to create an issue at https://github.com/yourusername/readmeai/issues.
+Please replace `YOUR_API_KEY` with your API Key. The API key can

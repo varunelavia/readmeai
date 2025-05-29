@@ -68,7 +68,7 @@ DEFAULT_IGNORE_FILES: List[str] = [
     "coverage.xml", "*.lcov", "*.coverage", "htmlcov/*", ".coverage.*",
     
     # Documentation files (except README.md)
-    "*.md", "docs/*", "*.rst", "*.txt", "LICENSE*", "CHANGELOG*", "AUTHORS*",
+    "*.md", "*.rst", "LICENSE*", "CHANGELOG*", "AUTHORS*",
 ]
 
 # Configure logging
@@ -181,7 +181,8 @@ def read_files_from_folder(
     folder_path: Path,
     dirs_to_ignore: Optional[List[str]] = None,
     files_to_ignore: Optional[List[str]] = None,
-    extensions_to_ignore: Optional[List[str]] = None
+    extensions_to_ignore: Optional[List[str]] = None,
+    extensions_to_allow: Optional[List[str]] = None
 ) -> str:
     """
     Reads content from files in a specified folder, skipping ignored ones.
@@ -191,6 +192,8 @@ def read_files_from_folder(
         dirs_to_ignore: A list of directory names to skip.
         files_to_ignore: A list of file names to skip.
         extensions_to_ignore: A list of file extensions to skip (e.g., ['py', 'js']).
+        extensions_to_allow: A list of file extensions to explicitly allow (e.g., ['py', 'js']).
+                           If provided, only files with these extensions will be processed.
 
     Returns:
         A string combining all read file contents, prefixed with their paths.
@@ -206,12 +209,15 @@ def read_files_from_folder(
     _dirs_to_ignore: List[str] = list(set(DEFAULT_IGNORE_DIRS + (dirs_to_ignore or [])))
     _files_to_ignore: List[str] = list(set(DEFAULT_IGNORE_FILES + (files_to_ignore or [])))
     _extensions_to_ignore: List[str] = [ext.lower().lstrip('.') for ext in (extensions_to_ignore or [])]
+    _extensions_to_allow: List[str] = [ext.lower().lstrip('.') for ext in (extensions_to_allow or [])]
 
     logger.info(f"Scanning folder: {folder_path}")
     logger.debug(f"Ignoring directories: {_dirs_to_ignore}")
     logger.debug(f"Ignoring files: {_files_to_ignore}")
     if _extensions_to_ignore:
         logger.debug(f"Ignoring extensions: {_extensions_to_ignore}")
+    if _extensions_to_allow:
+        logger.debug(f"Only allowing extensions: {_extensions_to_allow}")
 
     file_contents: Dict[str, str] = {}
     total_files = 0
@@ -225,6 +231,7 @@ def read_files_from_folder(
         for filename in files:
             total_files += 1
             file_path = Path(root) / filename
+            file_ext = file_path.suffix.lower().lstrip('.')
             
             # Skip ignored files, .md files, and hidden files
             if (any(filename.endswith(ext.lstrip('*')) for ext in _files_to_ignore) or
@@ -233,8 +240,15 @@ def read_files_from_folder(
                 skipped_files += 1
                 continue
 
-            # Skip files with ignored extensions
-            if _extensions_to_ignore and file_path.suffix.lower().lstrip('.') in _extensions_to_ignore:
+            # Handle extension filtering
+            if _extensions_to_allow:
+                # If allow list is provided, only process files with allowed extensions
+                if file_ext not in _extensions_to_allow:
+                    logger.debug(f"Skipping file with non-allowed extension: {file_path}")
+                    skipped_files += 1
+                    continue
+            elif _extensions_to_ignore and file_ext in _extensions_to_ignore:
+                # If ignore list is provided and allow list is not, skip ignored extensions
                 logger.debug(f"Skipping file with ignored extension: {file_path}")
                 skipped_files += 1
                 continue
@@ -516,6 +530,12 @@ def main() -> None:
         help="Comma-separated list of file extensions to skip (e.g., 'py,js,css'). Do not include the dot."
     )
     generate_parser.add_argument(
+        "--extensions-to-allow",
+        type=str,
+        help="Comma-separated list of file extensions to explicitly allow (e.g., 'py,js,css'). "
+             "If provided, only files with these extensions will be processed. Do not include the dot."
+    )
+    generate_parser.add_argument(
         "--additional-context",
         type=str,
         help="Additional textual context about the project to provide to the AI."
@@ -695,13 +715,15 @@ def main() -> None:
         dirs_to_ignore_list: Optional[List[str]] = args.dirs_to_ignore.split(',') if args.dirs_to_ignore else None
         files_to_ignore_list: Optional[List[str]] = args.files_to_ignore.split(',') if args.files_to_ignore else None
         extensions_to_ignore_list: Optional[List[str]] = args.extensions_to_ignore.split(',') if args.extensions_to_ignore else None
+        extensions_to_allow_list: Optional[List[str]] = args.extensions_to_allow.split(',') if args.extensions_to_allow else None
 
         try:
             repository_content: str = read_files_from_folder(
                 target_path,
                 dirs_to_ignore_list,
                 files_to_ignore_list,
-                extensions_to_ignore_list
+                extensions_to_ignore_list,
+                extensions_to_allow_list
             )
         except FileNotFoundError as e:
             logger.error(f"❌ {e}")
