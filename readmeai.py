@@ -248,30 +248,33 @@ def list_models(args: argparse.Namespace) -> None:
     # Get API key from args, config, or environment
     api_key = args.api_key or load_config().get('api_key') or os.getenv('API_KEY')
     
-    if args.api:
-        # List models for specific API
-        if not api_key:
-            print(f"❌ Error: No API key found for {args.api}. Please provide an API key using --api-key or configure it.")
-            return
-            
-        if args.api == "gemini":
-            models = fetch_gemini_models(api_key)
-            print(f"\nGEMINI:")
-            for model in models:
-                print(f"  - {model}")
-        elif args.api == "anthropic":
-            models = fetch_anthropic_models(api_key)
-            print(f"\nANTHROPIC:")
-            for model in models:
-                print(f"  - {model}")
-        elif args.api == "openai":
-            models = fetch_openai_models(api_key)
-            print(f"\nOPENAI:")
-            for model in models:
-                print(f"  - {model}")
-    else:
+    # Get API from args or config
+    api = args.api or load_config().get('default_api')
+    
+    if not api:
         print("Please specify an API to fetch models from using --api flag.")
         print("Available APIs: gemini, anthropic, openai")
+        return
+        
+    if not api_key:
+        print(f"❌ Error: No API key found for {api}. Please provide an API key using --api-key or configure it.")
+        return
+            
+    if api == "gemini":
+        models = fetch_gemini_models(api_key)
+        print(f"\nGEMINI:")
+        for model in models:
+            print(f"  - {model}")
+    elif api == "anthropic":
+        models = fetch_anthropic_models(api_key)
+        print(f"\nANTHROPIC:")
+        for model in models:
+            print(f"  - {model}")
+    elif api == "openai":
+        models = fetch_openai_models(api_key)
+        print(f"\nOPENAI:")
+        for model in models:
+            print(f"  - {model}")
 
 def configure(args: argparse.Namespace) -> None:
     """Configure API keys and default settings."""
