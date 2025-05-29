@@ -222,12 +222,22 @@ def main() -> None:
         "--api",
         type=str,
         choices=["gemini", "openai", "anthropic"],
-        help="AI API to use for generating the README."
+        required=True,
+        help="AI API to use for generating the README (required).\n"
+             "Available options:\n"
+             "- gemini: Google's Gemini API\n"
+             "- anthropic: Anthropic's Claude API\n"
+             "- openai: OpenAI's API"
     )
     parser.add_argument(
         "--ai-model",
         type=str,
-        help=f"AI model to use."
+        required=True,
+        help="AI model to use (required).\n"
+             "Suggested models:\n"
+             "- For Gemini: gemini-1.5-pro, gemini-1.5-flash, gemini-2.0-flash-exp\n"
+             "- For Anthropic: claude-3-opus-20240229, claude-3-sonnet-20240229\n"
+             "- For OpenAI: gpt-4-turbo-preview, gpt-3.5-turbo, gpt-4o-mini, gpt-4o"
     )
     parser.add_argument(
         "--api-key",
