@@ -534,6 +534,60 @@ def reset_config() -> None:
     else:
         print("No configuration file found.")
 
+def validate_path(path: str) -> Path:
+    """Validate and convert path string to Path object."""
+    try:
+        path_obj = Path(path)
+        if not path_obj.exists():
+            raise FileNotFoundError(f"Path does not exist: {path}")
+        if not path_obj.is_dir():
+            raise NotADirectoryError(f"Path is not a directory: {path}")
+        return path_obj
+    except Exception as e:
+        raise ValueError(f"Invalid path: {e}")
+
+def validate_comma_list(value: str, name: str) -> List[str]:
+    """Validate comma-separated list input."""
+    if not value:
+        return []
+    try:
+        items = [item.strip() for item in value.split(',') if item.strip()]
+        if not items:
+            raise ValueError(f"Empty {name} list")
+        return items
+    except Exception as e:
+        raise ValueError(f"Invalid {name} list: {e}")
+
+def validate_api_model(api: str, model: str, api_key: str) -> None:
+    """Validate API and model combination."""
+    if api not in SUPPORTED_APIS:
+        raise ValueError(f"Unsupported API: {api}. Choose from: {', '.join(SUPPORTED_APIS)}")
+    
+    if not model:
+        raise ValueError("Model name is required")
+    
+    # Validate model exists for the API
+    if api == "gemini":
+        models = fetch_gemini_models(api_key)
+    elif api == "anthropic":
+        models = fetch_anthropic_models(api_key)
+    elif api == "openai":
+        models = fetch_openai_models(api_key)
+        
+    if model not in models:
+        raise ValueError(f"Invalid model '{model}' for API '{api}'. Available models:\n" + 
+                        "\n".join(f"  - {m}" for m in models))
+
+def validate_numeric(value: int, name: str, min_val: int, max_val: int) -> int:
+    """Validate numeric input within range."""
+    try:
+        num = int(value)
+        if num < min_val or num > max_val:
+            raise ValueError(f"{name} must be between {min_val} and {max_val}")
+        return num
+    except ValueError as e:
+        raise ValueError(f"Invalid {name}: {e}")
+
 def main() -> None:
     """Main function to parse arguments and handle commands."""
     parser = argparse.ArgumentParser(
@@ -579,8 +633,8 @@ def main() -> None:
     )
     generate_parser.add_argument(
         "--readme-filename",
-        default=DEFAULT_README_FILENAME,
         type=str,
+        default=DEFAULT_README_FILENAME,
         help=f"Name of the README file to generate (default: {DEFAULT_README_FILENAME})."
     )
     generate_parser.add_argument(
@@ -679,138 +733,131 @@ def main() -> None:
         parser.print_help()
         sys.exit(1)
 
-    if args.command == 'list-models':
-        list_models(args)
-        return
+    try:
+        if args.command == 'list-models':
+            list_models(args)
+            return
 
-    if args.command == 'configure':
-        configure(args)
-        return
-        
-    if args.command == 'configure-show':
-        show_config()
-        return
-        
-    if args.command == 'configure-reset':
-        reset_config()
-        return
-
-    if args.command == 'generate':
-        # Load configuration
-        config = load_config()
-        
-        # Use command line args or fall back to config
-        api = args.api or config.get('default_api')
-        ai_model = args.ai_model or config.get('default_model')
-        api_key = get_api_key(args)
-
-        if not api:
-            print("❌ Error: No API specified. Use --api or configure a default API.")
-            sys.exit(1)
-        
-        if not ai_model:
-            print("❌ Error: No AI model specified. Use --ai-model or configure a default model.")
-            sys.exit(1)
-
-        if not api_key:
-            print(
-                "❌ Error: No valid API key found. Please provide an API key using one of these methods:\n"
-                "1. Command line argument: --api-key YOUR_API_KEY\n"
-                "2. Environment variable: export API_KEY='YOUR_API_KEY'\n"
-                "3. Configuration: readmeai.py configure --api-key YOUR_API_KEY\n\n"
-                "To get an API key, visit the respective service's website.\n\n"
-                "For more information, visit: https://github.com/varunelavia/readmeai",
-                file=sys.stderr
-            )
-            sys.exit(1)
-
-        # Validate model exists for the API
-        if api == "gemini":
-            models = fetch_gemini_models(api_key)
-        elif api == "anthropic":
-            models = fetch_anthropic_models(api_key)
-        elif api == "openai":
-            models = fetch_openai_models(api_key)
+        if args.command == 'configure':
+            configure(args)
+            return
             
-        if ai_model not in models:
-            print(f"❌ Error: Invalid model '{ai_model}' for API '{api}'")
-            print("Available models:")
-            for model in models:
-                print(f"  - {model}")
-            sys.exit(1)
+        if args.command == 'configure-show':
+            show_config()
+            return
+            
+        if args.command == 'configure-reset':
+            reset_config()
+            return
 
-        # Initialize API clients
-        if api == "gemini":
+        if args.command == 'generate':
+            # Validate path
+            target_path = validate_path(args.path)
+            
+            # Validate numeric inputs
+            max_retries = validate_numeric(args.max_retries, "max-retries", 1, 10)
+            retry_delay = validate_numeric(args.retry_delay, "retry-delay", 1, 30)
+            max_tokens = validate_numeric(args.max_tokens, "max-tokens", 100, 4096)
+            
+            # Validate comma-separated lists
+            dirs_to_ignore_list = validate_comma_list(args.dirs_to_ignore, "directories to ignore") if args.dirs_to_ignore else None
+            files_to_ignore_list = validate_comma_list(args.files_to_ignore, "files to ignore") if args.files_to_ignore else None
+            extensions_to_ignore_list = validate_comma_list(args.extensions_to_ignore, "extensions to ignore") if args.extensions_to_ignore else None
+            extensions_to_allow_list = validate_comma_list(args.extensions_to_allow, "extensions to allow") if args.extensions_to_allow else None
+            
+            # Load configuration
+            config = load_config()
+            
+            # Use command line args or fall back to config
+            api = args.api or config.get('default_api')
+            ai_model = args.ai_model or config.get('default_model')
+            api_key = get_api_key(args)
+
+            if not api:
+                raise ValueError("No API specified. Use --api or configure a default API.")
+            
+            if not ai_model:
+                raise ValueError("No AI model specified. Use --ai-model or configure a default model.")
+
+            if not api_key:
+                raise ValueError(
+                    "No valid API key found. Please provide an API key using one of these methods:\n"
+                    "1. Command line argument: --api-key YOUR_API_KEY\n"
+                    "2. Environment variable: export API_KEY='YOUR_API_KEY'\n"
+                    "3. Configuration: readmeai.py configure --api-key YOUR_API_KEY\n\n"
+                    "To get an API key, visit the respective service's website.\n\n"
+                    "For more information, visit: https://github.com/varunelavia/readmeai"
+                )
+
+            # Validate API and model combination
+            validate_api_model(api, ai_model, api_key)
+
+            # Initialize API clients
+            if api == "gemini":
+                try:
+                    genai.configure(api_key=api_key)
+                    client = genai.GenerativeModel(ai_model)
+                except Exception as e:
+                    raise RuntimeError(f"Failed to configure Gemini API: {e}")
+            elif api == "anthropic":
+                try:
+                    client = anthropic.Anthropic(api_key=api_key)
+                except Exception as e:
+                    raise RuntimeError(f"Failed to configure Anthropic API: {e}")
+            elif api == "openai":
+                try:
+                    client = OpenAI(api_key=api_key)
+                except Exception as e:
+                    raise RuntimeError(f"Failed to configure OpenAI API: {e}")
+
             try:
-                genai.configure(api_key=api_key)
-                client = genai.GenerativeModel(ai_model)
+                repository_content: str = read_files_from_folder(
+                    target_path,
+                    dirs_to_ignore_list,
+                    files_to_ignore_list,
+                    extensions_to_ignore_list,
+                    extensions_to_allow_list
+                )
+            except FileNotFoundError as e:
+                raise ValueError(f"Directory not found: {e}")
+            except ValueError as e:
+                raise ValueError(f"Error reading files: {e}")
             except Exception as e:
-                logger.error(f"❌ Error: Failed to configure Gemini API: {e}")
-                sys.exit(1)
-        elif api == "anthropic":
+                raise RuntimeError(f"Unexpected error while reading files: {e}")
+
+            prompt = GENERATION_PROMPT_TEMPLATE.format(repository_content=repository_content)
+
+            if args.additional_context:
+                prompt += f"\n\nAdditional Context Provided by User:\n{args.additional_context}"
+
+            logger.info(f"🤖 Attempting to generate README using {api} model: {ai_model}...")
             try:
-                client = anthropic.Anthropic(api_key=api_key)
+                generated_text = generate_with_retry(
+                    api, 
+                    client, 
+                    ai_model, 
+                    prompt, 
+                    max_retries,
+                    max_tokens
+                )
             except Exception as e:
-                logger.error(f"❌ Error: Failed to configure Anthropic API: {e}")
-                sys.exit(1)
-        elif api == "openai":
-            try:
-                client = OpenAI(api_key=api_key)
-            except Exception as e:
-                logger.error(f"❌ Error: Failed to configure OpenAI API: {e}")
-                sys.exit(1)
+                raise RuntimeError(f"{api} content generation failed after {max_retries} retries: {e}")
 
-        target_path = Path(args.path)
+            if not generated_text.strip():
+                raise ValueError("The AI returned an empty response. Cannot generate README.")
 
-        # Process ignore lists from comma-separated strings to lists
-        dirs_to_ignore_list: Optional[List[str]] = args.dirs_to_ignore.split(',') if args.dirs_to_ignore else None
-        files_to_ignore_list: Optional[List[str]] = args.files_to_ignore.split(',') if args.files_to_ignore else None
-        extensions_to_ignore_list: Optional[List[str]] = args.extensions_to_ignore.split(',') if args.extensions_to_ignore else None
-        extensions_to_allow_list: Optional[List[str]] = args.extensions_to_allow.split(',') if args.extensions_to_allow else None
+            write_readme(generated_text, target_path, args.readme_filename)
+            logger.info("🎉 README generation process complete!")
 
-        try:
-            repository_content: str = read_files_from_folder(
-                target_path,
-                dirs_to_ignore_list,
-                files_to_ignore_list,
-                extensions_to_ignore_list,
-                extensions_to_allow_list
-            )
-        except FileNotFoundError as e:
-            logger.error(f"❌ {e}")
-            sys.exit(1)
-        except ValueError as e:
-            logger.error(f"❌ {e}")
-            sys.exit(1)
-        except Exception as e:
-            logger.error(f"❌ An unexpected error occurred while reading files: {e}")
-            sys.exit(1)
-
-        prompt = GENERATION_PROMPT_TEMPLATE.format(repository_content=repository_content)
-
-        if args.additional_context:
-            prompt += f"\n\nAdditional Context Provided by User:\n{args.additional_context}"
-
-        logger.info(f"🤖 Attempting to generate README using {api} model: {ai_model}...")
-        try:
-            generated_text = generate_with_retry(
-                api, 
-                client, 
-                ai_model, 
-                prompt, 
-                args.max_retries,
-                args.max_tokens
-            )
-        except Exception as e:
-            logger.error(f"❌ Error: {api} content generation failed after {args.max_retries} retries: {e}")
-            sys.exit(1)
-
-        if not generated_text.strip():
-            logger.error("❌ Error: The AI returned an empty response. Cannot generate README.")
-            sys.exit(1)
-
-        write_readme(generated_text, target_path, args.readme_filename)
-        logger.info("🎉 README generation process complete!")
+    except ValueError as e:
+        logger.error(f"❌ Error: {e}")
+        sys.exit(1)
+    except RuntimeError as e:
+        logger.error(f"❌ Error: {e}")
+        sys.exit(1)
+    except Exception as e:
+        logger.error(f"❌ An unexpected error occurred: {e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

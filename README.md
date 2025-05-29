@@ -143,18 +143,35 @@ Main command to analyze a codebase and generate a README.
 
 **Arguments:**
 - `path`: Path to the directory to analyze (required)
+  - Must be a valid directory path
+  - Directory must exist and be accessible
 - `--dirs-to-ignore`: Comma-separated list of directories to skip
+  - Must be a valid comma-separated list
+  - Empty lists are not allowed
 - `--files-to-ignore`: Comma-separated list of files to skip
+  - Must be a valid comma-separated list
+  - Empty lists are not allowed
 - `--extensions-to-ignore`: File extensions to skip (without dots)
+  - Must be a valid comma-separated list
+  - Empty lists are not allowed
 - `--extensions-to-allow`: Only process files with these extensions
+  - Must be a valid comma-separated list
+  - Empty lists are not allowed
 - `--additional-context`: Extra context about the project
 - `--readme-filename`: Output filename (default: README.md)
 - `--api`: AI service to use (gemini/anthropic/openai)
+  - Must be one of the supported APIs
 - `--ai-model`: Specific model to use
+  - Must be a valid model for the chosen API
+  - Use `list-models` to see available models
 - `--api-key`: API key for the service
+  - Must be a valid API key for the chosen service
 - `--max-retries`: Maximum API retry attempts (default: 3)
+  - Must be between 1 and 10
 - `--retry-delay`: Delay between retries in seconds (default: 2)
+  - Must be between 1 and 30
 - `--max-tokens`: Maximum tokens to generate (default: 2048)
+  - Must be between 100 and 4096
 - `--debug`: Enable debug logging
 
 ### `configure` - Set Default Settings
@@ -163,8 +180,12 @@ Save API keys and default preferences.
 
 **Arguments:**
 - `--api-key`: Set the API key
+  - Must be a valid API key for the chosen service
 - `--default-api`: Set default AI service
+  - Must be one of the supported APIs (gemini/anthropic/openai)
 - `--default-model`: Set default model
+  - Must be a valid model for the chosen API
+  - Use `list-models` to see available models
 
 ### `configure-show` - Display Current Configuration
 
@@ -188,7 +209,40 @@ Display available models for each AI service.
 
 **Arguments:**
 - `--api`: Specific API to query
+  - Must be one of the supported APIs (gemini/anthropic/openai)
 - `--api-key`: API key (optional if configured)
+  - Must be a valid API key for the chosen service
+
+## Input Validation
+
+The tool performs comprehensive validation of all inputs:
+
+1. **Path Validation**
+   - Ensures the target directory exists
+   - Verifies the path is a directory, not a file
+   - Checks for proper permissions
+
+2. **List Validation**
+   - Validates comma-separated lists for directories, files, and extensions
+   - Ensures lists are properly formatted
+   - Prevents empty lists
+
+3. **API and Model Validation**
+   - Verifies API selection is supported
+   - Validates model names against available models
+   - Checks API key format and validity
+
+4. **Numeric Parameter Validation**
+   - Enforces reasonable ranges for retries, delays, and token limits
+   - Prevents invalid numeric inputs
+   - Provides clear error messages for out-of-range values
+
+5. **Configuration Validation**
+   - Validates API keys before saving
+   - Ensures model compatibility with chosen API
+   - Maintains configuration file integrity
+
+All validation errors are reported with clear, descriptive messages to help users correct their inputs.
 
 ## API Reference
 

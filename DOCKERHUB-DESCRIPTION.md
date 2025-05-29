@@ -81,18 +81,35 @@ docker run --rm \
 
 **Generate Options:**
 * `path`: (Required) Path to the directory to analyze (e.g., "/app/project" inside container).
+  - Must be a valid directory path
+  - Directory must exist and be accessible
 * `--api <gemini|openai|anthropic>`: (Required if not configured) Specify the AI provider.
-* `--ai-model <model_name>`: (Required if not configured) Specify the model from the chosen provider. Use list-models to see available models.
+  - Must be one of the supported APIs
+* `--ai-model <model_name>`: (Required if not configured) Specify the model from the chosen provider.
+  - Must be a valid model for the chosen API
+  - Use list-models to see available models
 * `--api-key <key_string>`: Provide API key directly (overrides API_KEY env var and config).
+  - Must be a valid API key for the chosen service
 * `--readme-filename <name.md>`: Output filename (default: README.md).
 * `--additional-context <text>`: Provide extra context to the AI.
 * `--dirs-to-ignore <dir1,dir2>`: Comma-separated directories to ignore.
+  - Must be a valid comma-separated list
+  - Empty lists are not allowed
 * `--files-to-ignore <file1,file2>`: Comma-separated files to ignore.
+  - Must be a valid comma-separated list
+  - Empty lists are not allowed
 * `--extensions-to-ignore <ext1,ext2>`: Comma-separated file extensions to ignore (no dots).
+  - Must be a valid comma-separated list
+  - Empty lists are not allowed
 * `--extensions-to-allow <ext1,ext2>`: Comma-separated file extensions to explicitly process.
+  - Must be a valid comma-separated list
+  - Empty lists are not allowed
 * `--max-retries <N>`: (Default: 3) Max API call retries.
+  - Must be between 1 and 10
 * `--retry-delay <N>`: (Default: 2) Seconds between retries.
+  - Must be between 1 and 30
 * `--max-tokens <N>`: (Default: 2048) Max tokens for generation.
+  - Must be between 100 and 4096
 * `--debug`: Enable debug logging.
 
 #### 2. `configure` - Set API Keys & Defaults
@@ -111,8 +128,12 @@ docker run --rm -it \
 
 **Configure Options:**
 * `--api-key <key_string>`: API key to save for the default (or specified) API.
+  - Must be a valid API key for the chosen service
 * `--default-api <gemini|openai|anthropic>`: Set the default AI provider.
+  - Must be one of the supported APIs
 * `--default-model <model_name>`: Set the default model for the default API.
+  - Must be a valid model for the chosen API
+  - Use list-models to see available models
 
 #### 3. `configure-show` - View Current Configuration
 
@@ -150,7 +171,40 @@ docker run --rm \
 
 **List-models Options:**
 * `--api <gemini|openai|anthropic>`: (Required) Provider to list models for.
+  - Must be one of the supported APIs
 * `--api-key <key_string>`: API key if not set via environment or config.
+  - Must be a valid API key for the chosen service
+
+### Input Validation
+
+The tool performs comprehensive validation of all inputs:
+
+1. **Path Validation**
+   - Ensures the target directory exists
+   - Verifies the path is a directory, not a file
+   - Checks for proper permissions
+
+2. **List Validation**
+   - Validates comma-separated lists for directories, files, and extensions
+   - Ensures lists are properly formatted
+   - Prevents empty lists
+
+3. **API and Model Validation**
+   - Verifies API selection is supported
+   - Validates model names against available models
+   - Checks API key format and validity
+
+4. **Numeric Parameter Validation**
+   - Enforces reasonable ranges for retries, delays, and token limits
+   - Prevents invalid numeric inputs
+   - Provides clear error messages for out-of-range values
+
+5. **Configuration Validation**
+   - Validates API keys before saving
+   - Ensures model compatibility with chosen API
+   - Maintains configuration file integrity
+
+All validation errors are reported with clear, descriptive messages to help users correct their inputs.
 
 ### API Key Management
 
