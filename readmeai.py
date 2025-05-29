@@ -16,6 +16,7 @@ import sys
 import json
 from pathlib import Path
 from typing import List, Optional, Dict, Union
+import time
 
 # It's more common to import the google.generativeai package like this:
 import google.generativeai as genai
@@ -23,6 +24,9 @@ import google.generativeai as genai
 # --- Constants ---
 DEFAULT_README_FILENAME: str = "README.md"
 CONFIG_FILE: str = os.path.expanduser("~/.readmeai/config.json")
+MAX_RETRIES: int = 3
+RETRY_DELAY: int = 2  # seconds
+DEFAULT_MAX_TOKENS: int = 2048  # Reasonable default for README generation
 
 # The prompt is quite large. Keeping it as a constant here.
 # For very complex prompts or internationalization, consider loading from a template file.
@@ -326,6 +330,37 @@ def configure(args: argparse.Namespace) -> None:
     else:
         print("ℹ️ No configuration changes specified")
 
+def generate_with_retry(api: str, client: Union[genai.GenerativeModel, anthropic.Anthropic, OpenAI], 
+                       model: str, prompt: str, max_retries: int = MAX_RETRIES, max_tokens: int = DEFAULT_MAX_TOKENS) -> str:
+    """Generate content with retry logic."""
+    for attempt in range(max_retries):
+        try:
+            if api == "gemini":
+                response = client.generate_content(prompt)
+                return response.text
+            elif api == "anthropic":
+                response = client.messages.create(
+                    model=model,
+                    max_tokens=max_tokens,
+                    messages=[{"role": "user", "content": prompt}]
+                )
+                return response.content[0].text
+            elif api == "openai":
+                response = client.chat.completions.create(
+                    model=model,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=1,
+                    max_tokens=max_tokens
+                )
+                return response.choices[0].message.content
+        except Exception as e:
+            if attempt < max_retries - 1:
+                print(f"⚠️ Attempt {attempt + 1} failed: {e}. Retrying in {RETRY_DELAY} seconds...")
+                time.sleep(RETRY_DELAY)
+            else:
+                raise e
+    return ""
+
 def main() -> None:
     """Main function to parse arguments and handle commands."""
     parser = argparse.ArgumentParser(
@@ -379,6 +414,24 @@ def main() -> None:
         "--api-key",
         type=str,
         help="API key for the selected AI service. Overrides API_KEY environment variable."
+    )
+    generate_parser.add_argument(
+        "--max-retries",
+        type=int,
+        default=MAX_RETRIES,
+        help=f"Maximum number of retries for API calls (default: {MAX_RETRIES})."
+    )
+    generate_parser.add_argument(
+        "--retry-delay",
+        type=int,
+        default=RETRY_DELAY,
+        help=f"Delay between retries in seconds (default: {RETRY_DELAY})."
+    )
+    generate_parser.add_argument(
+        "--max-tokens",
+        type=int,
+        default=DEFAULT_MAX_TOKENS,
+        help=f"Maximum number of tokens to generate (default: {DEFAULT_MAX_TOKENS})."
     )
     
     # Configure command
@@ -483,18 +536,19 @@ def main() -> None:
         if api == "gemini":
             try:
                 genai.configure(api_key=api_key)
+                client = genai.GenerativeModel(ai_model)
             except Exception as e:
                 print(f"❌ Error: Failed to configure Gemini API: {e}", file=sys.stderr)
                 sys.exit(1)
         elif api == "anthropic":
             try:
-                anthropic_client = anthropic.Anthropic(api_key=api_key)
+                client = anthropic.Anthropic(api_key=api_key)
             except Exception as e:
                 print(f"❌ Error: Failed to configure Anthropic API: {e}", file=sys.stderr)
                 sys.exit(1)
         elif api == "openai":
             try:
-                openai_client = OpenAI(api_key=api_key)
+                client = OpenAI(api_key=api_key)
             except Exception as e:
                 print(f"❌ Error: Failed to configure OpenAI API: {e}", file=sys.stderr)
                 sys.exit(1)
@@ -525,33 +579,16 @@ def main() -> None:
 
         print(f"\n🤖 Attempting to generate README using {api} model: {ai_model}...")
         try:
-            if api == "gemini":
-                model = genai.GenerativeModel(ai_model)
-                response = model.generate_content(prompt)
-                generated_text = response.text
-            elif api == "anthropic":
-                response = anthropic_client.messages.create(
-                    model=ai_model,
-                    max_tokens=4096,
-                    messages=[{"role": "user", "content": prompt}]
-                )
-                generated_text = response.content[0].text
-            elif api == "openai":
-                response = openai_client.chat.completions.create(
-                    model=ai_model,
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=1,
-                    max_tokens=4096
-                )
-                generated_text = response.choices[0].message.content
-        except AttributeError:
-            try:
-                generated_text = "".join(part.text for part in response.parts)
-            except Exception:
-                print(f"❌ Error: Could not extract text from {api} response. Response object: {response}", file=sys.stderr)
-                sys.exit(1)
+            generated_text = generate_with_retry(
+                api, 
+                client, 
+                ai_model, 
+                prompt, 
+                args.max_retries,
+                args.max_tokens
+            )
         except Exception as e:
-            print(f"❌ Error: {api} content generation failed: {e}", file=sys.stderr)
+            print(f"❌ Error: {api} content generation failed after {args.max_retries} retries: {e}", file=sys.stderr)
             sys.exit(1)
 
         if not generated_text.strip():
