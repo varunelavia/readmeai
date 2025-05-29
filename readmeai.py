@@ -12,7 +12,7 @@ Features:
 - Smart file filtering and context gathering
 - Retry mechanism for API reliability
 
-For more information, visit: https://github.com/yourusername/readmeai
+For more information, visit: https://github.com/varunelavia/readmeai
 """
 
 import argparse
@@ -487,7 +487,7 @@ def main() -> None:
     """Main function to parse arguments and handle commands."""
     parser = argparse.ArgumentParser(
         description="Generate README.md files using AI.\n\n"
-                   "For more details, visit: https://github.com/yourusername/readmeai",
+                   "For more details, visit: https://github.com/varunelavia/readmeai",
         formatter_class=argparse.RawTextHelpFormatter
     )
     
@@ -648,7 +648,7 @@ def main() -> None:
                 "2. Environment variable: export API_KEY='YOUR_API_KEY'\n"
                 "3. Configuration: readmeai.py configure --api-key YOUR_API_KEY\n\n"
                 "To get an API key, visit the respective service's website.\n\n"
-                "For more information, visit: https://github.com/yourusername/readmeai",
+                "For more information, visit: https://github.com/varunelavia/readmeai",
                 file=sys.stderr
             )
             sys.exit(1)
