@@ -528,6 +528,7 @@ def main() -> None:
             elif api == "anthropic":
                 response = anthropic_client.messages.create(
                     model=ai_model,
+                    max_tokens=4096,
                     messages=[{"role": "user", "content": prompt}]
                 )
                 generated_text = response.content[0].text
