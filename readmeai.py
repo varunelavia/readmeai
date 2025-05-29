@@ -235,7 +235,8 @@ def fetch_openai_models(api_key: str) -> List[str]:
     try:
         client = OpenAI(api_key=api_key)
         models = client.models.list()
-        return [model.id for model in models.data]
+        # Filter for chat completion models only
+        return [model.id for model in models.data if model.id.startswith(('gpt-3.5', 'gpt-4'))]
     except Exception as e:
         print(f"❌ Error fetching OpenAI models: {e}")
         return []
@@ -478,7 +479,7 @@ def main() -> None:
                 print(f"  - {model}")
             sys.exit(1)
 
-        # Rest of the generate command implementation...
+        # Initialize API clients
         if api == "gemini":
             try:
                 genai.configure(api_key=api_key)
@@ -492,8 +493,11 @@ def main() -> None:
                 print(f"❌ Error: Failed to configure Anthropic API: {e}", file=sys.stderr)
                 sys.exit(1)
         elif api == "openai":
-            print("❌ Error: OpenAI API support is not implemented yet.", file=sys.stderr)
-            sys.exit(1)
+            try:
+                openai_client = OpenAI(api_key=api_key)
+            except Exception as e:
+                print(f"❌ Error: Failed to configure OpenAI API: {e}", file=sys.stderr)
+                sys.exit(1)
 
         target_path = Path(args.path)
 
@@ -532,9 +536,14 @@ def main() -> None:
                     messages=[{"role": "user", "content": prompt}]
                 )
                 generated_text = response.content[0].text
-            else:
-                print(f"❌ Error: {api} API support is not implemented yet.", file=sys.stderr)
-                sys.exit(1)
+            elif api == "openai":
+                response = openai_client.chat.completions.create(
+                    model=ai_model,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=1,
+                    max_tokens=4096
+                )
+                generated_text = response.choices[0].message.content
         except AttributeError:
             try:
                 generated_text = "".join(part.text for part in response.parts)
