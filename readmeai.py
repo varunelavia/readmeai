@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
 """
-Generates a README.md file for a code repository using various AI services.
+README.ai - AI-Powered README Generator
 
-This script provides commands to:
-- generate: Create a README.md file using AI
-- configure: Set up API keys and default settings
-- list-models: Show available models for each AI service
+A command-line tool that generates comprehensive README.md files for your projects
+using various AI services (OpenAI, Anthropic, Google Gemini).
+
+Features:
+- Generate detailed READMEs from your codebase
+- Support for multiple AI providers
+- Configurable settings and API keys
+- Smart file filtering and context gathering
+- Retry mechanism for API reliability
+
+For more information, visit: https://github.com/yourusername/readmeai
 """
 
 import argparse
@@ -15,8 +22,10 @@ import os
 import sys
 import json
 from pathlib import Path
-from typing import List, Optional, Dict, Union
+from typing import List, Optional, Dict, Union, Any
 import time
+import logging
+from datetime import datetime
 
 # It's more common to import the google.generativeai package like this:
 import google.generativeai as genai
@@ -27,6 +36,17 @@ CONFIG_FILE: str = os.path.expanduser("~/.readmeai/config.json")
 MAX_RETRIES: int = 3
 RETRY_DELAY: int = 2  # seconds
 DEFAULT_MAX_TOKENS: int = 2048  # Reasonable default for README generation
+SUPPORTED_APIS: List[str] = ["gemini", "anthropic", "openai"]
+DEFAULT_IGNORE_DIRS: List[str] = [".git", "node_modules", "venv", "__pycache__", ".pytest_cache", "dist", "build"]
+DEFAULT_IGNORE_FILES: List[str] = [".DS_Store", "package-lock.json", "yarn.lock", "*.pyc", "*.pyo", "*.pyd"]
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger(__name__)
 
 # The prompt is quite large. Keeping it as a constant here.
 # For very complex prompts or internationalization, consider loading from a template file.
@@ -75,24 +95,56 @@ Here is the content of the repository:
 {repository_content}
 """
 
+def validate_api_key(api: str, api_key: str) -> bool:
+    """Validate API key format and test connection."""
+    if not api_key or len(api_key.strip()) < 10:  # Basic length check
+        return False
+        
+    try:
+        if api == "gemini":
+            genai.configure(api_key=api_key)
+            # Test connection by listing models
+            genai.list_models()
+        elif api == "anthropic":
+            client = anthropic.Anthropic(api_key=api_key)
+            # Test connection by listing models
+            client.models.list()
+        elif api == "openai":
+            client = OpenAI(api_key=api_key)
+            # Test connection by listing models
+            client.models.list()
+        return True
+    except Exception as e:
+        logger.error(f"API key validation failed for {api}: {e}")
+        return False
 
 def get_api_key(args: argparse.Namespace) -> Optional[str]:
     """
     Get the API key from various sources in order of priority:
     1. Command line argument (--api-key)
     2. Environment variable (API_KEY)
+    3. Configuration file
     """
     if args.api_key:
-        print("Using API key from command line argument.")
-        return args.api_key
+        if validate_api_key(args.api, args.api_key):
+            logger.info("Using API key from command line argument.")
+            return args.api_key
+        else:
+            logger.error("Invalid API key provided via command line.")
+            return None
 
     api_key: Optional[str] = os.getenv('API_KEY')
-    if api_key:
-        print("Using API key from API_KEY environment variable.")
+    if api_key and validate_api_key(args.api, api_key):
+        logger.info("Using API key from API_KEY environment variable.")
+        return api_key
+
+    config = load_config()
+    api_key = config.get('api_key')
+    if api_key and validate_api_key(args.api, api_key):
+        logger.info("Using API key from configuration file.")
         return api_key
 
     return None
-
 
 def read_files_from_folder(
     folder_path: Path,
@@ -112,66 +164,72 @@ def read_files_from_folder(
 
     Raises:
         FileNotFoundError: If the folder_path does not exist.
+        ValueError: If no readable files are found.
     """
     if not folder_path.exists() or not folder_path.is_dir():
         raise FileNotFoundError(f"Error: Folder path '{folder_path}' does not exist or is not a directory.")
 
     file_contents: Dict[str, str] = {}
-    # Ensure default empty lists if None
-    _dirs_to_ignore: List[str] = dirs_to_ignore or []
-    _files_to_ignore: List[str] = files_to_ignore or []
+    # Merge default ignore lists with user-provided ones
+    _dirs_to_ignore: List[str] = list(set(DEFAULT_IGNORE_DIRS + (dirs_to_ignore or [])))
+    _files_to_ignore: List[str] = list(set(DEFAULT_IGNORE_FILES + (files_to_ignore or [])))
 
-    print(f"Scanning folder: {folder_path}")
-    print(f"Ignoring directories: {_dirs_to_ignore}")
-    print(f"Ignoring files: {_files_to_ignore}")
+    logger.info(f"Scanning folder: {folder_path}")
+    logger.info(f"Ignoring directories: {_dirs_to_ignore}")
+    logger.info(f"Ignoring files: {_files_to_ignore}")
 
-    for item in folder_path.rglob('*'): # rglob for recursive globbing
-        if item.is_dir():
-            # Skip hidden directories and ignored directories
-            if item.name.startswith('.') or item.name in _dirs_to_ignore:
-                # To prevent rglob from going into these dirs, ideally os.walk behavior is better
-                # For pathlib, one would typically filter after getting all paths or build a complex generator.
-                # For simplicity with rglob, we just skip if the parent is ignored.
-                # This is a limitation of rglob vs os.walk for complex skipping logic.
-                # A more robust way with rglob is to get all files and then filter paths.
-                # os.walk is actually better for conditional pruning of directories. Let's stick to that.
-                pass # Handled by os.walk's dir pruning below
+    total_files = 0
+    skipped_files = 0
+    max_file_size = 1024 * 1024  # 1MB limit per file
 
-        # Let's revert to os.walk for its directory pruning capability which is more efficient
-        # for ignoring directories.
     for root, dirs, files in os.walk(folder_path, topdown=True):
         # Prune ignored and hidden directories
         dirs[:] = [d for d in dirs if not d.startswith('.') and d not in _dirs_to_ignore]
 
         for filename in files:
-            # Skip ignored files, .md files (usually READMEs themselves), and hidden files
-            if (filename in _files_to_ignore or
+            total_files += 1
+            file_path = Path(root) / filename
+            
+            # Skip ignored files, .md files, and hidden files
+            if (any(filename.endswith(ext.lstrip('*')) for ext in _files_to_ignore) or
                 filename.endswith('.md') or
                 filename.startswith('.')):
+                skipped_files += 1
                 continue
 
-            file_path = Path(root) / filename
             try:
+                # Check file size
+                if file_path.stat().st_size > max_file_size:
+                    logger.warning(f"Skipping large file: {file_path} (size > 1MB)")
+                    skipped_files += 1
+                    continue
+
                 # Store relative path for context in the prompt
                 rel_path = file_path.relative_to(folder_path)
                 content = file_path.read_text(encoding='utf-8')
                 file_contents[str(rel_path)] = content
-                print(f"Read file: {rel_path}")
+                logger.debug(f"Read file: {rel_path}")
             except UnicodeDecodeError:
-                print(f"Warning: Could not decode file {file_path} as UTF-8. Skipping.")
+                logger.warning(f"Could not decode file {file_path} as UTF-8. Skipping.")
+                skipped_files += 1
             except Exception as e:
-                print(f"Warning: Error reading file {file_path}: {e}. Skipping.")
+                logger.warning(f"Error reading file {file_path}: {e}. Skipping.")
+                skipped_files += 1
 
     if not file_contents:
-        print("Warning: No files were read from the specified directory (or all were ignored/unreadable).")
-        return "No readable file content found in the repository."
+        raise ValueError(
+            f"No readable files found in the repository. "
+            f"Total files scanned: {total_files}, "
+            f"Files skipped: {skipped_files}"
+        )
+
+    logger.info(f"Successfully read {len(file_contents)} files (skipped {skipped_files} files)")
 
     combined_content: str = ""
     for rel_path_str, content in file_contents.items():
         combined_content += f"\n=== {rel_path_str} ===\n{content}\n"
 
     return combined_content
-
 
 def write_readme(content: str, output_folder: Path, readme_filename: str) -> None:
     """
@@ -181,28 +239,46 @@ def write_readme(content: str, output_folder: Path, readme_filename: str) -> Non
         content: The string content to write to the README.
         output_folder: The Path object of the folder where the README will be saved.
         readme_filename: The name of the README file.
+
+    Raises:
+        IOError: If the file cannot be written.
+        Exception: For unexpected errors.
     """
     readme_path = output_folder / readme_filename
+    
+    # Check if README already exists
+    if readme_path.exists():
+        backup_path = readme_path.with_suffix(f'.{datetime.now().strftime("%Y%m%d_%H%M%S")}.md')
+        try:
+            readme_path.rename(backup_path)
+            logger.info(f"Backed up existing README to: {backup_path}")
+        except Exception as e:
+            logger.warning(f"Could not backup existing README: {e}")
+
     try:
         readme_path.write_text(content, encoding='utf-8')
-        print(f"✅ README successfully written to: {readme_path.resolve()}")
+        logger.info(f"✅ README successfully written to: {readme_path.resolve()}")
     except IOError as e:
-        print(f"❌ Error: Could not write README file to '{readme_path}': {e}", file=sys.stderr)
+        logger.error(f"❌ Error: Could not write README file to '{readme_path}': {e}")
         sys.exit(1)
     except Exception as e:
-        print(f"❌ An unexpected error occurred while writing the README: {e}", file=sys.stderr)
+        logger.error(f"❌ An unexpected error occurred while writing the README: {e}")
         sys.exit(1)
 
-def save_config(config: Dict[str, str]) -> None:
+def save_config(config: Dict[str, Any]) -> None:
     """Save configuration to file."""
     config_dir = os.path.dirname(CONFIG_FILE)
     os.makedirs(config_dir, exist_ok=True)
     
-    with open(CONFIG_FILE, 'w') as f:
-        json.dump(config, f, indent=2)
-    print(f"✅ Configuration saved to {CONFIG_FILE}")
+    try:
+        with open(CONFIG_FILE, 'w') as f:
+            json.dump(config, f, indent=2)
+        logger.info(f"✅ Configuration saved to {CONFIG_FILE}")
+    except Exception as e:
+        logger.error(f"❌ Error saving configuration: {e}")
+        sys.exit(1)
 
-def load_config() -> Dict[str, str]:
+def load_config() -> Dict[str, Any]:
     """Load configuration from file."""
     if not os.path.exists(CONFIG_FILE):
         return {}
@@ -211,7 +287,7 @@ def load_config() -> Dict[str, str]:
         with open(CONFIG_FILE, 'r') as f:
             return json.load(f)
     except Exception as e:
-        print(f"❌ Error loading configuration: {e}")
+        logger.error(f"❌ Error loading configuration: {e}")
         return {}
 
 def fetch_gemini_models(api_key: str) -> List[str]:
@@ -221,7 +297,7 @@ def fetch_gemini_models(api_key: str) -> List[str]:
         models = genai.list_models()
         return [model.name for model in models]
     except Exception as e:
-        print(f"❌ Error fetching Gemini models: {e}")
+        logger.error(f"❌ Error fetching Gemini models: {e}")
         return []
 
 def fetch_anthropic_models(api_key: str) -> List[str]:
@@ -231,7 +307,7 @@ def fetch_anthropic_models(api_key: str) -> List[str]:
         models = client.models.list()
         return [model.id for model in models.data]
     except Exception as e:
-        print(f"❌ Error fetching Anthropic models: {e}")
+        logger.error(f"❌ Error fetching Anthropic models: {e}")
         return []
 
 def fetch_openai_models(api_key: str) -> List[str]:
@@ -242,7 +318,7 @@ def fetch_openai_models(api_key: str) -> List[str]:
         # Filter for chat completion models only
         return [model.id for model in models.data if model.id.startswith(('gpt-3.5', 'gpt-4'))]
     except Exception as e:
-        print(f"❌ Error fetching OpenAI models: {e}")
+        logger.error(f"❌ Error fetching OpenAI models: {e}")
         return []
 
 def list_models(args: argparse.Namespace) -> None:
@@ -258,7 +334,7 @@ def list_models(args: argparse.Namespace) -> None:
     
     if not api:
         print("Please specify an API to fetch models from using --api flag.")
-        print("Available APIs: gemini, anthropic, openai")
+        print(f"Available APIs: {', '.join(SUPPORTED_APIS)}")
         return
         
     if not api_key:
@@ -286,12 +362,15 @@ def configure(args: argparse.Namespace) -> None:
     config = load_config()
     
     if args.api_key:
+        if not validate_api_key(args.default_api or config.get('default_api', 'openai'), args.api_key):
+            print("❌ Error: Invalid API key provided.")
+            sys.exit(1)
         config['api_key'] = args.api_key
         print("✅ API key saved")
     
     if args.default_api:
-        if args.default_api not in ["gemini", "anthropic", "openai"]:
-            print(f"❌ Error: Invalid API '{args.default_api}'. Choose from: gemini, anthropic, openai")
+        if args.default_api not in SUPPORTED_APIS:
+            print(f"❌ Error: Invalid API '{args.default_api}'. Choose from: {', '.join(SUPPORTED_APIS)}")
             sys.exit(1)
         config['default_api'] = args.default_api
         print(f"✅ Default API set to {args.default_api}")
@@ -331,7 +410,8 @@ def configure(args: argparse.Namespace) -> None:
         print("ℹ️ No configuration changes specified")
 
 def generate_with_retry(api: str, client: Union[genai.GenerativeModel, anthropic.Anthropic, OpenAI], 
-                       model: str, prompt: str, max_retries: int = MAX_RETRIES, max_tokens: int = DEFAULT_MAX_TOKENS) -> str:
+                       model: str, prompt: str, max_retries: int = MAX_RETRIES, 
+                       max_tokens: int = DEFAULT_MAX_TOKENS) -> str:
     """Generate content with retry logic."""
     for attempt in range(max_retries):
         try:
@@ -355,7 +435,7 @@ def generate_with_retry(api: str, client: Union[genai.GenerativeModel, anthropic
                 return response.choices[0].message.content
         except Exception as e:
             if attempt < max_retries - 1:
-                print(f"⚠️ Attempt {attempt + 1} failed: {e}. Retrying in {RETRY_DELAY} seconds...")
+                logger.warning(f"⚠️ Attempt {attempt + 1} failed: {e}. Retrying in {RETRY_DELAY} seconds...")
                 time.sleep(RETRY_DELAY)
             else:
                 raise e
@@ -365,7 +445,7 @@ def main() -> None:
     """Main function to parse arguments and handle commands."""
     parser = argparse.ArgumentParser(
         description="Generate README.md files using AI.\n\n"
-                   "For more details, visit: https://hub.docker.com/r/readmeai/readmeai",
+                   "For more details, visit: https://github.com/yourusername/readmeai",
         formatter_class=argparse.RawTextHelpFormatter
     )
     
@@ -402,7 +482,7 @@ def main() -> None:
     generate_parser.add_argument(
         "--api",
         type=str,
-        choices=["gemini", "anthropic", "openai"],
+        choices=SUPPORTED_APIS,
         help="AI API to use for generating the README."
     )
     generate_parser.add_argument(
@@ -433,6 +513,11 @@ def main() -> None:
         default=DEFAULT_MAX_TOKENS,
         help=f"Maximum number of tokens to generate (default: {DEFAULT_MAX_TOKENS})."
     )
+    generate_parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Enable debug logging."
+    )
     
     # Configure command
     config_parser = subparsers.add_parser('configure', help='Configure API keys and default settings')
@@ -444,7 +529,7 @@ def main() -> None:
     config_parser.add_argument(
         "--default-api",
         type=str,
-        choices=["gemini", "anthropic", "openai"],
+        choices=SUPPORTED_APIS,
         help="Set the default API to use"
     )
     config_parser.add_argument(
@@ -458,7 +543,7 @@ def main() -> None:
     list_models_parser.add_argument(
         "--api",
         type=str,
-        choices=["gemini", "anthropic", "openai"],
+        choices=SUPPORTED_APIS,
         help="Fetch models from specific API (requires API key)"
     )
     list_models_parser.add_argument(
@@ -475,6 +560,10 @@ def main() -> None:
     )
 
     args = parser.parse_args()
+
+    # Set debug logging if requested
+    if hasattr(args, 'debug') and args.debug:
+        logger.setLevel(logging.DEBUG)
 
     if not args.command:
         parser.print_help()
@@ -495,7 +584,7 @@ def main() -> None:
         # Use command line args or fall back to config
         api = args.api or config.get('default_api')
         ai_model = args.ai_model or config.get('default_model')
-        api_key = args.api_key or config.get('api_key') or os.getenv('API_KEY')
+        api_key = get_api_key(args)
 
         if not api:
             print("❌ Error: No API specified. Use --api or configure a default API.")
@@ -507,12 +596,12 @@ def main() -> None:
 
         if not api_key:
             print(
-                "❌ Error: No API key found. Please provide an API key using one of these methods:\n"
+                "❌ Error: No valid API key found. Please provide an API key using one of these methods:\n"
                 "1. Command line argument: --api-key YOUR_API_KEY\n"
                 "2. Environment variable: export API_KEY='YOUR_API_KEY'\n"
                 "3. Configuration: readmeai.py configure --api-key YOUR_API_KEY\n\n"
                 "To get an API key, visit the respective service's website.\n\n"
-                "For more information, visit: https://hub.docker.com/r/readmeai/readmeai",
+                "For more information, visit: https://github.com/yourusername/readmeai",
                 file=sys.stderr
             )
             sys.exit(1)
@@ -538,19 +627,19 @@ def main() -> None:
                 genai.configure(api_key=api_key)
                 client = genai.GenerativeModel(ai_model)
             except Exception as e:
-                print(f"❌ Error: Failed to configure Gemini API: {e}", file=sys.stderr)
+                logger.error(f"❌ Error: Failed to configure Gemini API: {e}")
                 sys.exit(1)
         elif api == "anthropic":
             try:
                 client = anthropic.Anthropic(api_key=api_key)
             except Exception as e:
-                print(f"❌ Error: Failed to configure Anthropic API: {e}", file=sys.stderr)
+                logger.error(f"❌ Error: Failed to configure Anthropic API: {e}")
                 sys.exit(1)
         elif api == "openai":
             try:
                 client = OpenAI(api_key=api_key)
             except Exception as e:
-                print(f"❌ Error: Failed to configure OpenAI API: {e}", file=sys.stderr)
+                logger.error(f"❌ Error: Failed to configure OpenAI API: {e}")
                 sys.exit(1)
 
         target_path = Path(args.path)
@@ -566,10 +655,13 @@ def main() -> None:
                 files_to_ignore_list
             )
         except FileNotFoundError as e:
-            print(f"❌ {e}", file=sys.stderr)
+            logger.error(f"❌ {e}")
+            sys.exit(1)
+        except ValueError as e:
+            logger.error(f"❌ {e}")
             sys.exit(1)
         except Exception as e:
-            print(f"❌ An unexpected error occurred while reading files: {e}", file=sys.stderr)
+            logger.error(f"❌ An unexpected error occurred while reading files: {e}")
             sys.exit(1)
 
         prompt = GENERATION_PROMPT_TEMPLATE.format(repository_content=repository_content)
@@ -577,7 +669,7 @@ def main() -> None:
         if args.additional_context:
             prompt += f"\n\nAdditional Context Provided by User:\n{args.additional_context}"
 
-        print(f"\n🤖 Attempting to generate README using {api} model: {ai_model}...")
+        logger.info(f"🤖 Attempting to generate README using {api} model: {ai_model}...")
         try:
             generated_text = generate_with_retry(
                 api, 
@@ -588,22 +680,15 @@ def main() -> None:
                 args.max_tokens
             )
         except Exception as e:
-            print(f"❌ Error: {api} content generation failed after {args.max_retries} retries: {e}", file=sys.stderr)
+            logger.error(f"❌ Error: {api} content generation failed after {args.max_retries} retries: {e}")
             sys.exit(1)
 
         if not generated_text.strip():
-            print("❌ Error: The AI returned an empty response. Cannot generate README.", file=sys.stderr)
+            logger.error("❌ Error: The AI returned an empty response. Cannot generate README.")
             sys.exit(1)
 
         write_readme(generated_text, target_path, args.readme_filename)
-        print("\n🎉 README generation process complete!")
+        logger.info("🎉 README generation process complete!")
 
 if __name__ == "__main__":
-    # For making it open source, consider adding these files to your repository:
-    # - requirements.txt (listing dependencies like google-generativeai)
-    # - LICENSE (e.g., MIT, Apache 2.0)
-    # - .gitignore (to ignore venv, __pycache__, etc.)
-    # - A README.md for this script itself, explaining how to install and use it.
-    # - CONTRIBUTING.md (if you want contributions)
-    # - Optionally, set up pre-commit hooks for formatting (e.g., black, ruff) and linting.
     main()
