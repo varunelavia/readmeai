@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 """
-Generates a README.md file for a code repository using Google's Gemini AI.
+Generates a README.md file for a code repository using various AI services.
 
-This script reads the contents of specified files in a directory,
-constructs a prompt for a Gemini model, and then generates a README.md
-file based on the model's response.
+This script provides commands to:
+- generate: Create a README.md file using AI
+- configure: Set up API keys and default settings
+- list-models: Show available models for each AI service
 """
 
 import argparse
 import anthropic
 import os
 import sys
+import json
 from pathlib import Path
 from typing import List, Optional, Dict, Union
 
@@ -19,6 +21,7 @@ import google.generativeai as genai
 
 # --- Constants ---
 DEFAULT_README_FILENAME: str = "README.md"
+CONFIG_FILE: str = os.path.expanduser("~/.readmeai/config.json")
 
 # The prompt is quite large. Keeping it as a constant here.
 # For very complex prompts or internationalization, consider loading from a template file.
@@ -185,157 +188,365 @@ def write_readme(content: str, output_folder: Path, readme_filename: str) -> Non
         print(f"❌ An unexpected error occurred while writing the README: {e}", file=sys.stderr)
         sys.exit(1)
 
+def save_config(config: Dict[str, str]) -> None:
+    """Save configuration to file."""
+    config_dir = os.path.dirname(CONFIG_FILE)
+    os.makedirs(config_dir, exist_ok=True)
+    
+    with open(CONFIG_FILE, 'w') as f:
+        json.dump(config, f, indent=2)
+    print(f"✅ Configuration saved to {CONFIG_FILE}")
+
+def load_config() -> Dict[str, str]:
+    """Load configuration from file."""
+    if not os.path.exists(CONFIG_FILE):
+        return {}
+    
+    try:
+        with open(CONFIG_FILE, 'r') as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"❌ Error loading configuration: {e}")
+        return {}
+
+def fetch_gemini_models(api_key: str) -> List[str]:
+    """Fetch available models from Gemini API."""
+    try:
+        genai.configure(api_key=api_key)
+        models = genai.list_models()
+        return [model.name for model in models]
+    except Exception as e:
+        print(f"❌ Error fetching Gemini models: {e}")
+        return []
+
+def fetch_anthropic_models(api_key: str) -> List[str]:
+    """Fetch available models from Anthropic API."""
+    try:
+        client = anthropic.Anthropic(api_key=api_key)
+        models = client.models.list()
+        return [model.id for model in models.data]
+    except Exception as e:
+        print(f"❌ Error fetching Anthropic models: {e}")
+        return []
+
+def fetch_openai_models(api_key: str) -> List[str]:
+    """Fetch available models from OpenAI API."""
+    try:
+        import openai
+        client = openai.OpenAI(api_key=api_key)
+        models = client.models.list()
+        return [model.id for model in models.data]
+    except Exception as e:
+        print(f"❌ Error fetching OpenAI models: {e}")
+        return []
+
+def list_models(args: argparse.Namespace) -> None:
+    """List available models for each API."""
+    print("\nAvailable AI Models:")
+    print("===================")
+    
+    # Get API key from args, config, or environment
+    api_key = args.api_key or load_config().get('api_key') or os.getenv('API_KEY')
+    
+    if args.api:
+        # List models for specific API
+        if not api_key:
+            print(f"❌ Error: No API key found for {args.api}. Please provide an API key using --api-key or configure it.")
+            return
+            
+        if args.api == "gemini":
+            models = fetch_gemini_models(api_key)
+            print(f"\nGEMINI:")
+            for model in models:
+                print(f"  - {model}")
+        elif args.api == "anthropic":
+            models = fetch_anthropic_models(api_key)
+            print(f"\nANTHROPIC:")
+            for model in models:
+                print(f"  - {model}")
+        elif args.api == "openai":
+            models = fetch_openai_models(api_key)
+            print(f"\nOPENAI:")
+            for model in models:
+                print(f"  - {model}")
+    else:
+        print("Please specify an API to fetch models from using --api flag.")
+        print("Available APIs: gemini, anthropic, openai")
+
+def configure(args: argparse.Namespace) -> None:
+    """Configure API keys and default settings."""
+    config = load_config()
+    
+    if args.api_key:
+        config['api_key'] = args.api_key
+        print("✅ API key saved")
+    
+    if args.default_api:
+        if args.default_api not in ["gemini", "anthropic", "openai"]:
+            print(f"❌ Error: Invalid API '{args.default_api}'. Choose from: gemini, anthropic, openai")
+            sys.exit(1)
+        config['default_api'] = args.default_api
+        print(f"✅ Default API set to {args.default_api}")
+    
+    if args.default_model:
+        # Validate model exists for the API
+        api_key = args.api_key or config.get('api_key') or os.getenv('API_KEY')
+        if not api_key:
+            print("❌ Error: No API key found. Please provide an API key to validate the model.")
+            sys.exit(1)
+            
+        api = args.default_api or config.get('default_api')
+        if not api:
+            print("❌ Error: No API specified. Please specify the API for the model.")
+            sys.exit(1)
+            
+        if api == "gemini":
+            models = fetch_gemini_models(api_key)
+        elif api == "anthropic":
+            models = fetch_anthropic_models(api_key)
+        elif api == "openai":
+            models = fetch_openai_models(api_key)
+            
+        if args.default_model not in models:
+            print(f"❌ Error: Invalid model '{args.default_model}' for API '{api}'")
+            print("Available models:")
+            for model in models:
+                print(f"  - {model}")
+            sys.exit(1)
+            
+        config['default_model'] = args.default_model
+        print(f"✅ Default model set to {args.default_model}")
+    
+    if config:
+        save_config(config)
+    else:
+        print("ℹ️ No configuration changes specified")
+
 def main() -> None:
-    """Main function to parse arguments and generate README."""
+    """Main function to parse arguments and handle commands."""
     parser = argparse.ArgumentParser(
-        description="Generate a README.md from directory contents.\n\n"
+        description="Generate README.md files using AI.\n\n"
                    "For more details, visit: https://hub.docker.com/r/readmeai/readmeai",
-        formatter_class=argparse.RawTextHelpFormatter # For better help text formatting
+        formatter_class=argparse.RawTextHelpFormatter
     )
-    parser.add_argument(
+    
+    subparsers = parser.add_subparsers(dest='command', help='Available commands')
+    
+    # Generate command
+    generate_parser = subparsers.add_parser('generate', help='Generate a README.md file')
+    generate_parser.add_argument(
         "path",
         type=str,
         help="Path to the directory to analyze."
     )
-    parser.add_argument(
+    generate_parser.add_argument(
         "--dirs-to-ignore",
         type=str,
         help="Comma-separated list of directory names to skip (e.g., '.git,node_modules,venv')."
     )
-    parser.add_argument(
+    generate_parser.add_argument(
         "--files-to-ignore",
         type=str,
         help="Comma-separated list of file names to skip (e.g., 'package-lock.json,.DS_Store')."
     )
-    parser.add_argument(
+    generate_parser.add_argument(
         "--additional-context",
         type=str,
         help="Additional textual context about the project to provide to the AI."
     )
-    parser.add_argument(
+    generate_parser.add_argument(
         "--readme-filename",
         default=DEFAULT_README_FILENAME,
         type=str,
         help=f"Name of the README file to generate (default: {DEFAULT_README_FILENAME})."
     )
-    parser.add_argument(
+    generate_parser.add_argument(
         "--api",
         type=str,
-        choices=["gemini", "openai", "anthropic"],
-        required=True,
-        help="AI API to use for generating the README (required).\n"
-             "Available options:\n"
-             "- gemini: Google's Gemini API\n"
-             "- anthropic: Anthropic's Claude API\n"
-             "- openai: OpenAI's API"
+        choices=["gemini", "anthropic", "openai"],
+        help="AI API to use for generating the README."
     )
-    parser.add_argument(
+    generate_parser.add_argument(
         "--ai-model",
         type=str,
-        required=True,
-        help="AI model to use (required).\n"
-             "Suggested models:\n"
-             "- For Gemini: gemini-1.5-pro, gemini-1.5-flash, gemini-2.0-flash-exp\n"
-             "- For Anthropic: claude-3-opus-20240229, claude-3-sonnet-20240229\n"
-             "- For OpenAI: gpt-4-turbo-preview, gpt-3.5-turbo, gpt-4o-mini, gpt-4o"
+        help="AI model to use."
     )
-    parser.add_argument(
+    generate_parser.add_argument(
         "--api-key",
         type=str,
         help="API key for the selected AI service. Overrides API_KEY environment variable."
     )
+    
+    # Configure command
+    config_parser = subparsers.add_parser('configure', help='Configure API keys and default settings')
+    config_parser.add_argument(
+        "--api-key",
+        type=str,
+        help="Set the API key for the selected service"
+    )
+    config_parser.add_argument(
+        "--default-api",
+        type=str,
+        choices=["gemini", "anthropic", "openai"],
+        help="Set the default API to use"
+    )
+    config_parser.add_argument(
+        "--default-model",
+        type=str,
+        help="Set the default model to use"
+    )
+    
+    # List models command
+    list_models_parser = subparsers.add_parser('list-models', help='List available models for each API')
+    list_models_parser.add_argument(
+        "--api",
+        type=str,
+        choices=["gemini", "anthropic", "openai"],
+        help="Fetch models from specific API (requires API key)"
+    )
+    list_models_parser.add_argument(
+        "--api-key",
+        type=str,
+        help="API key for fetching models (optional if configured)"
+    )
+    
+    # Version argument
     parser.add_argument(
         "-v", "--version",
         action="version",
-        version="%(prog)s 1.0.0" # Simple versioning
+        version="%(prog)s 1.0.0"
     )
 
     args = parser.parse_args()
 
-    api_key = get_api_key(args)
-    if not api_key:
-        print(
-            "❌ Error: No API key found. Please provide an API key using one of these methods:\n"
-            "1. Command line argument: --api-key YOUR_API_KEY\n"
-            "2. Environment variable: export API_KEY='YOUR_API_KEY'\n\n"
-            "To get an API key, visit the respective service's website.\n\n"
-            "For more information, visit: https://hub.docker.com/r/readmeai/readmeai",
-            file=sys.stderr
-        )
+    if not args.command:
+        parser.print_help()
         sys.exit(1)
 
-    if args.api == "gemini":
-        try:
-            genai.configure(api_key=api_key)
-        except Exception as e:
-            print(f"❌ Error: Failed to configure Gemini API: {e}", file=sys.stderr)
+    if args.command == 'list-models':
+        list_models(args)
+        return
+
+    if args.command == 'configure':
+        configure(args)
+        return
+
+    if args.command == 'generate':
+        # Load configuration
+        config = load_config()
+        
+        # Use command line args or fall back to config
+        api = args.api or config.get('default_api')
+        ai_model = args.ai_model or config.get('default_model')
+        api_key = args.api_key or config.get('api_key') or os.getenv('API_KEY')
+
+        if not api:
+            print("❌ Error: No API specified. Use --api or configure a default API.")
             sys.exit(1)
-    elif args.api == "anthropic":
-        try:
-            anthropic_client = anthropic.Anthropic(api_key=api_key)
-        except Exception as e:
-            print(f"❌ Error: Failed to configure Anthropic API: {e}", file=sys.stderr)
+        
+        if not ai_model:
+            print("❌ Error: No AI model specified. Use --ai-model or configure a default model.")
             sys.exit(1)
-    elif args.api in ["openai", "anthropic"]:
-        print(f"❌ Error: {args.api} API support is not implemented yet.", file=sys.stderr)
-        sys.exit(1)
 
-    target_path = Path(args.path)
-
-    # Process ignore lists from comma-separated strings to lists
-    dirs_to_ignore_list: Optional[List[str]] = args.dirs_to_ignore.split(',') if args.dirs_to_ignore else None
-    files_to_ignore_list: Optional[List[str]] = args.files_to_ignore.split(',') if args.files_to_ignore else None
-
-    try:
-        repository_content: str = read_files_from_folder(
-            target_path,
-            dirs_to_ignore_list,
-            files_to_ignore_list
-        )
-    except FileNotFoundError as e:
-        print(f"❌ {e}", file=sys.stderr)
-        sys.exit(1)
-    except Exception as e: # Catch other potential errors from read_files_from_folder
-        print(f"❌ An unexpected error occurred while reading files: {e}", file=sys.stderr)
-        sys.exit(1)
-
-    prompt = GENERATION_PROMPT_TEMPLATE.format(repository_content=repository_content)
-
-    if args.additional_context:
-        prompt += f"\n\nAdditional Context Provided by User:\n{args.additional_context}"
-
-    print(f"\n🤖 Attempting to generate README using {args.api} model: {args.ai_model}...")
-    try:
-        if args.api == "gemini":
-            model = genai.GenerativeModel(args.ai_model)
-            response = model.generate_content(prompt)
-            generated_text = response.text
-        elif args.api == "anthropic":
-            response = anthropic_client.messages.create(
-                model=args.ai_model,
-                messages=[{"role": "user", "content": prompt}]
+        if not api_key:
+            print(
+                "❌ Error: No API key found. Please provide an API key using one of these methods:\n"
+                "1. Command line argument: --api-key YOUR_API_KEY\n"
+                "2. Environment variable: export API_KEY='YOUR_API_KEY'\n"
+                "3. Configuration: readmeai.py configure --api-key YOUR_API_KEY\n\n"
+                "To get an API key, visit the respective service's website.\n\n"
+                "For more information, visit: https://hub.docker.com/r/readmeai/readmeai",
+                file=sys.stderr
             )
-            generated_text = response.content[0].text
-        else:
-            print(f"❌ Error: {args.api} API support is not implemented yet.", file=sys.stderr)
             sys.exit(1)
-    except AttributeError: # Handle cases where response.text might not be directly available
+
+        # Validate model exists for the API
+        if api == "gemini":
+            models = fetch_gemini_models(api_key)
+        elif api == "anthropic":
+            models = fetch_anthropic_models(api_key)
+        elif api == "openai":
+            models = fetch_openai_models(api_key)
+            
+        if ai_model not in models:
+            print(f"❌ Error: Invalid model '{ai_model}' for API '{api}'")
+            print("Available models:")
+            for model in models:
+                print(f"  - {model}")
+            sys.exit(1)
+
+        # Rest of the generate command implementation...
+        if api == "gemini":
+            try:
+                genai.configure(api_key=api_key)
+            except Exception as e:
+                print(f"❌ Error: Failed to configure Gemini API: {e}", file=sys.stderr)
+                sys.exit(1)
+        elif api == "anthropic":
+            try:
+                anthropic_client = anthropic.Anthropic(api_key=api_key)
+            except Exception as e:
+                print(f"❌ Error: Failed to configure Anthropic API: {e}", file=sys.stderr)
+                sys.exit(1)
+        elif api == "openai":
+            print("❌ Error: OpenAI API support is not implemented yet.", file=sys.stderr)
+            sys.exit(1)
+
+        target_path = Path(args.path)
+
+        # Process ignore lists from comma-separated strings to lists
+        dirs_to_ignore_list: Optional[List[str]] = args.dirs_to_ignore.split(',') if args.dirs_to_ignore else None
+        files_to_ignore_list: Optional[List[str]] = args.files_to_ignore.split(',') if args.files_to_ignore else None
+
         try:
-            # For some complex responses, text might be within parts
-            generated_text = "".join(part.text for part in response.parts)
-        except Exception: # If still failing, log the response structure
-            print(f"❌ Error: Could not extract text from {args.api} response. Response object: {response}", file=sys.stderr)
+            repository_content: str = read_files_from_folder(
+                target_path,
+                dirs_to_ignore_list,
+                files_to_ignore_list
+            )
+        except FileNotFoundError as e:
+            print(f"❌ {e}", file=sys.stderr)
             sys.exit(1)
-    except Exception as e:
-        print(f"❌ Error: {args.api} content generation failed: {e}", file=sys.stderr)
-        sys.exit(1)
+        except Exception as e:
+            print(f"❌ An unexpected error occurred while reading files: {e}", file=sys.stderr)
+            sys.exit(1)
 
-    if not generated_text.strip():
-        print("❌ Error: The AI returned an empty response. Cannot generate README.", file=sys.stderr)
-        sys.exit(1)
+        prompt = GENERATION_PROMPT_TEMPLATE.format(repository_content=repository_content)
 
-    write_readme(generated_text, target_path, args.readme_filename)
-    print("\n🎉 README generation process complete!")
+        if args.additional_context:
+            prompt += f"\n\nAdditional Context Provided by User:\n{args.additional_context}"
+
+        print(f"\n🤖 Attempting to generate README using {api} model: {ai_model}...")
+        try:
+            if api == "gemini":
+                model = genai.GenerativeModel(ai_model)
+                response = model.generate_content(prompt)
+                generated_text = response.text
+            elif api == "anthropic":
+                response = anthropic_client.messages.create(
+                    model=ai_model,
+                    messages=[{"role": "user", "content": prompt}]
+                )
+                generated_text = response.content[0].text
+            else:
+                print(f"❌ Error: {api} API support is not implemented yet.", file=sys.stderr)
+                sys.exit(1)
+        except AttributeError:
+            try:
+                generated_text = "".join(part.text for part in response.parts)
+            except Exception:
+                print(f"❌ Error: Could not extract text from {api} response. Response object: {response}", file=sys.stderr)
+                sys.exit(1)
+        except Exception as e:
+            print(f"❌ Error: {api} content generation failed: {e}", file=sys.stderr)
+            sys.exit(1)
+
+        if not generated_text.strip():
+            print("❌ Error: The AI returned an empty response. Cannot generate README.", file=sys.stderr)
+            sys.exit(1)
+
+        write_readme(generated_text, target_path, args.readme_filename)
+        print("\n🎉 README generation process complete!")
 
 if __name__ == "__main__":
     # For making it open source, consider adding these files to your repository:
