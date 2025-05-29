@@ -166,6 +166,22 @@ Save API keys and default preferences.
 - `--default-api`: Set default AI service
 - `--default-model`: Set default model
 
+### `configure-show` - Display Current Configuration
+
+Show current configuration settings without exposing the API key.
+
+```bash
+readmeai configure-show
+```
+
+### `configure-reset` - Reset Configuration
+
+Delete the configuration file and start fresh.
+
+```bash
+readmeai configure-reset
+```
+
 ### `list-models` - List Available Models
 
 Display available models for each AI service.

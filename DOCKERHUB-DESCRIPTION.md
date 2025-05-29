@@ -114,7 +114,31 @@ docker run --rm -it \
 * `--default-api <gemini|openai|anthropic>`: Set the default AI provider.
 * `--default-model <model_name>`: Set the default model for the default API.
 
-#### 3. `list-models` - Discover Available Models
+#### 3. `configure-show` - View Current Configuration
+
+Display current configuration settings without exposing the API key:
+
+```bash
+docker run --rm \
+  --user "$(id -u):$(id -g)" \
+  -v "$HOME/.config/readmeai_docker_config:/home/readmeai_user/.readmeai" \
+  readmeai/readmeai \
+  configure-show
+```
+
+#### 4. `configure-reset` - Reset Configuration
+
+Delete the configuration file and start fresh:
+
+```bash
+docker run --rm \
+  --user "$(id -u):$(id -g)" \
+  -v "$HOME/.config/readmeai_docker_config:/home/readmeai_user/.readmeai" \
+  readmeai/readmeai \
+  configure-reset
+```
+
+#### 5. `list-models` - Discover Available Models
 
 ```bash
 docker run --rm \

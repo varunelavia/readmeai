@@ -497,6 +497,43 @@ def generate_with_retry(api: str, client: Union[genai.GenerativeModel, anthropic
                 raise e
     return ""
 
+def show_config() -> None:
+    """Display current configuration without exposing the API key."""
+    config = load_config()
+    if not config:
+        print("No configuration found.")
+        return
+
+    print("\nCurrent Configuration:")
+    print("=====================")
+    
+    # Show default API if set
+    if 'default_api' in config:
+        print(f"Default API: {config['default_api']}")
+    
+    # Show default model if set
+    if 'default_model' in config:
+        print(f"Default Model: {config['default_model']}")
+    
+    # Show API key status without exposing the key
+    if 'api_key' in config:
+        masked_key = config['api_key'][:4] + '*' * (len(config['api_key']) - 8) + config['api_key'][-4:]
+        print(f"API Key: {masked_key}")
+    
+    print(f"\nConfiguration file: {CONFIG_FILE}")
+
+def reset_config() -> None:
+    """Delete the configuration file."""
+    if os.path.exists(CONFIG_FILE):
+        try:
+            os.remove(CONFIG_FILE)
+            print("✅ Configuration has been reset.")
+        except Exception as e:
+            print(f"❌ Error resetting configuration: {e}")
+            sys.exit(1)
+    else:
+        print("No configuration file found.")
+
 def main() -> None:
     """Main function to parse arguments and handle commands."""
     parser = argparse.ArgumentParser(
@@ -605,6 +642,12 @@ def main() -> None:
         help="Set the default model to use"
     )
     
+    # Show configuration command
+    subparsers.add_parser('configure-show', help='Display current configuration')
+    
+    # Reset configuration command
+    subparsers.add_parser('configure-reset', help='Reset configuration by deleting the config file')
+    
     # List models command
     list_models_parser = subparsers.add_parser('list-models', help='List available models for each API')
     list_models_parser.add_argument(
@@ -642,6 +685,14 @@ def main() -> None:
 
     if args.command == 'configure':
         configure(args)
+        return
+        
+    if args.command == 'configure-show':
+        show_config()
+        return
+        
+    if args.command == 'configure-reset':
+        reset_config()
         return
 
     if args.command == 'generate':
