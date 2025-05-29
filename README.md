@@ -225,14 +225,145 @@ The project includes a multi-stage Dockerfile for efficient containerization:
 - **Security**: Runs as non-root user
 - **Optimization**: Virtual environment with minimal dependencies
 
-### Building and Running
+### Quick Start with Docker
+
+1. **Pull the Image:**
+    ```bash
+    docker pull readmeai/readmeai:latest 
+    # Or specify a version, e.g., readmeai/readmeai:1.0.0
+    ```
+
+2. **Basic Generation (using Environment Variable for API Key):**
+    This example uses Gemini. Replace `--api gemini` and the `API_KEY` with your chosen provider and key.
+
+    ```bash
+    docker run --rm \
+      --user "$(id -u):$(id -g)" \
+      -v "/path/to/your/project:/app/project" \
+      -e API_KEY="YOUR_CHOSEN_PROVIDER_API_KEY" \
+      readmeai/readmeai \
+      generate \
+      --api gemini \
+      --ai-model "gemini-1.5-flash" \
+      "/app/project"
+    ```
+
+    **Explanation of common Docker flags:**
+    * `--rm`: Automatically removes the container when it exits.
+    * `--user "$(id -u):$(id -g)"`: Runs the container process with your host user's ID and group ID. Crucial to avoid permission errors when writing the README to your mounted volume.
+    * `-v "/path/to/your/project:/app/project"`: Mounts your local project directory to `/app/project` inside the container. The generated README is saved here.
+    * `-e API_KEY="YOUR_..."`: Sets the generic `API_KEY` environment variable. The tool uses this key for the provider specified by the `--api` flag.
+
+### Advanced Docker Usage
+
+#### 1. Persistent Configuration
+
+The `readmeai configure` command saves to `~/.readmeai/config.json` inside the container. To make it persistent:
+
+1. Create a directory on your host to store the configuration:
+    ```bash
+    mkdir -p "$HOME/.config/readmeai_docker_config"
+    ```
+
+2. Mount this directory when running readmeai configure:
+    ```bash
+    docker run --rm -it \
+      --user "$(id -u):$(id -g)" \
+      -v "$HOME/.config/readmeai_docker_config:/home/readmeai_user/.readmeai" \
+      readmeai/readmeai \
+      configure --default-api gemini --api-key "YOUR_GEMINI_KEY"
+    ```
+
+> **Note:** Correctly mapping `~` for dynamic UIDs in Docker can be tricky. Test the target path (`/root/.readmeai` or a path corresponding to the dynamic user's potential home) for your specific base image.
+
+#### 2. Using Different AI Providers
 
 ```bash
-# Build
+# Using OpenAI
+docker run --rm \
+  --user "$(id -u):$(id -g)" \
+  -v "/path/to/your/project:/app/project" \
+  -e API_KEY="YOUR_OPENAI_KEY" \
+  readmeai/readmeai \
+  generate \
+  --api openai \
+  --ai-model "gpt-4" \
+  "/app/project"
+
+# Using Anthropic
+docker run --rm \
+  --user "$(id -u):$(id -g)" \
+  -v "/path/to/your/project:/app/project" \
+  -e API_KEY="YOUR_ANTHROPIC_KEY" \
+  readmeai/readmeai \
+  generate \
+  --api anthropic \
+  --ai-model "claude-3-opus-20240229" \
+  "/app/project"
+```
+
+#### 3. Advanced Options
+
+```bash
+# With file filtering
+docker run --rm \
+  --user "$(id -u):$(id -g)" \
+  -v "/path/to/your/project:/app/project" \
+  -e API_KEY="YOUR_API_KEY" \
+  readmeai/readmeai \
+  generate \
+  --api openai \
+  --ai-model "gpt-4" \
+  --extensions-to-allow "py,js" \
+  --dirs-to-ignore "node_modules,venv" \
+  --files-to-ignore "package-lock.json,.env" \
+  --additional-context "This is a machine learning project" \
+  "/app/project"
+
+# With custom output filename
+docker run --rm \
+  --user "$(id -u):$(id -g)" \
+  -v "/path/to/your/project:/app/project" \
+  -e API_KEY="YOUR_API_KEY" \
+  readmeai/readmeai \
+  generate \
+  --api openai \
+  --ai-model "gpt-4" \
+  --readme-filename "PROJECT_README.md" \
+  "/app/project"
+```
+
+#### 4. Listing Available Models
+
+```bash
+docker run --rm \
+  -e API_KEY="YOUR_PROVIDER_API_KEY" \
+  readmeai/readmeai \
+  list-models --api <gemini|openai|anthropic>
+```
+
+### Building from Source
+
+If you prefer to build the Docker image yourself:
+
+```bash
+# Clone the repository
+git clone https://github.com/varunelavia/readmeai.git
+cd readmeai
+
+# Build the image
 docker build -t readmeai .
 
-# Run with mounted volume
-docker run -v $(pwd):/app/project -e API_KEY=YOUR_KEY readmeai generate /app/project
+# Run using the local image
+docker run --rm \
+  --user "$(id -u):$(id -g)" \
+  -v "/path/to/your/project:/app/project" \
+  -e API_KEY="YOUR_API_KEY" \
+  readmeai \
+  generate \
+  --api openai \
+  --ai-model "gpt-4" \
+  "/app/project"
 ```
 
 ## Contributing
