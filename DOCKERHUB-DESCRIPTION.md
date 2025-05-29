@@ -171,13 +171,13 @@ This tool uses third-party AI APIs. Your usage is subject to the respective prov
 * **Project Repository:** [https://github.com/varunelavia/readmeai](https://github.com/varunelavia/readmeai)
 * **Google Gemini:**
     * [Pricing](https://ai.google.dev/pricing)
-    * [Quotas](https://ai.google.dev/docs/quotas)
+    * [Quotas](https://ai.google.dev/gemini-api/docs/rate-limits)
 * **OpenAI:**
     * [Pricing](https://openai.com/pricing)
     * [Rate Limits](https://platform.openai.com/docs/guides/rate-limits)
 * **Anthropic Claude:**
     * [Pricing](https://www.anthropic.com/pricing)
-    * Access & Rate Limits: Typically detailed in their console or developer documentation upon gaining API access.
+    * [Rate Limits](https://docs.anthropic.com/claude/reference/rate-limits)
 
 ### Feedback & Contact
 
