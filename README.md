@@ -164,17 +164,32 @@ Display available models for each AI service.
 
 ### Supported AI Services
 
-1. **OpenAI**
-   - Models: GPT-3.5-turbo, GPT-4, GPT-4-turbo
-   - [Get API Key](https://platform.openai.com/api-keys)
+**1. OpenAI**
 
-2. **Anthropic**
-   - Models: Claude-3-opus, Claude-3-sonnet, Claude-3-haiku
-   - [Get API Key](https://console.anthropic.com/api-keys)
+* **Dashboard Login:** [https://platform.openai.com/login/](https://platform.openai.com/login/)
+* **Get API Key:** [https://platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+* **Official Documentation:** [https://platform.openai.com/docs](https://platform.openai.com/docs)
+* **Pricing Page:** [https://openai.com/pricing](https://openai.com/pricing)
+* **Rate Limits & Quotas:** [https://platform.openai.com/docs/guides/rate-limits](https://platform.openai.com/docs/guides/rate-limits)
+* **Usage Dashboard:** [https://platform.openai.com/usage](https://platform.openai.com/usage)
 
-3. **Google Gemini**
-   - Models: Gemini-pro, Gemini-pro-vision
-   - [Get API Key](https://makersuite.google.com/app/apikey)
+**2. Anthropic (Claude)**
+
+* **Console Login:** [https://console.anthropic.com/](https://console.anthropic.com/)
+* **Get API Key:** [https://console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys)
+* **Official Documentation:** [https://docs.anthropic.com/claude/reference/getting-started-with-the-api](https://docs.anthropic.com/claude/reference/getting-started-with-the-api)
+* **Pricing Page:** [https://www.anthropic.com/pricing](https://www.anthropic.com/pricing) (and often detailed within the console after login)
+* **Limits and Quotas:** Typically found within the console or developer documentation after account setup. A general guide can be found at [https://docs.anthropic.com/claude/reference/rate-limits](https://docs.anthropic.com/claude/reference/rate-limits).
+
+**3. Google Gemini**
+
+* **Official Documentation (Gemini API):** [https://ai.google.dev/docs](https://ai.google.dev/docs)
+* **Get API Key:** [https://aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
+* **Google AI Studio (for API Keys):** [https://aistudio.google.com/](https://aistudio.google.com/)
+* **Gemini API Pricing:** [https://ai.google.dev/pricing](https://ai.google.dev/pricing)
+* **Gemini API Quotas and Limits:** [https://ai.google.dev/gemini-api/docs/rate-limits](https://ai.google.dev/gemini-api/docs/rate-limits)
+* **Google Cloud Free Tier & Always Free Limits (includes some Generative AI):** [https://cloud.google.com/free/docs/free-cloud-features#generative-ai](https://cloud.google.com/free/docs/free-cloud-features#generative-ai)
+* **Manage Billing for GCP Projects:** [https://cloud.google.com/billing/docs/how-to/modify-project](https://cloud.google.com/billing/docs/how-to/modify-project)
 
 ## File Filtering
 
