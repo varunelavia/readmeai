@@ -37,8 +37,39 @@ MAX_RETRIES: int = 3
 RETRY_DELAY: int = 2  # seconds
 DEFAULT_MAX_TOKENS: int = 2048  # Reasonable default for README generation
 SUPPORTED_APIS: List[str] = ["gemini", "anthropic", "openai"]
+
+# Core directories to ignore - minimal set for essential functionality
 DEFAULT_IGNORE_DIRS: List[str] = [".git", "node_modules", "venv", "__pycache__", ".pytest_cache", "dist", "build"]
-DEFAULT_IGNORE_FILES: List[str] = [".DS_Store", "package-lock.json", "yarn.lock", "*.pyc", "*.pyo", "*.pyd"]
+
+# Core files to ignore - essential files that shouldn't be included in README generation
+DEFAULT_IGNORE_FILES: List[str] = [
+    # System and IDE files
+    ".DS_Store", "Thumbs.db", ".env*", ".vscode/*", ".idea/*", "*.swp", "*.swo",
+    
+    # Package manager files
+    "package-lock.json", "yarn.lock", "composer.lock", "poetry.lock", "Cargo.lock",
+    
+    # Compiled and binary files
+    "*.pyc", "*.pyo", "*.pyd", "*.so", "*.dll", "*.dylib", "*.class",
+    "*.o", "*.obj", "*.exe", "*.bin", "*.dat", "*.db", "*.sqlite",
+    
+    # Build and cache files
+    "*.egg-info", "*.egg", "*.whl", "*.tar.gz", "*.zip", "*.rar", "*.7z",
+    "*.log", "*.tmp", "*.temp", "*.cache", "*.pid", "*.pid.lock",
+    
+    # Media and binary assets
+    "*.jpg", "*.jpeg", "*.png", "*.gif", "*.ico", "*.svg", "*.webp",
+    "*.mp3", "*.mp4", "*.mov", "*.avi", "*.wav", "*.pdf", "*.doc", "*.docx",
+    
+    # Font files
+    "*.ttf", "*.otf", "*.woff", "*.woff2", "*.eot",
+    
+    # Test and coverage files
+    "coverage.xml", "*.lcov", "*.coverage", "htmlcov/*", ".coverage.*",
+    
+    # Documentation files (except README.md)
+    "*.md", "docs/*", "*.rst", "*.txt", "LICENSE*", "CHANGELOG*", "AUTHORS*",
+]
 
 # Configure logging
 logging.basicConfig(
@@ -149,15 +180,17 @@ def get_api_key(args: argparse.Namespace) -> Optional[str]:
 def read_files_from_folder(
     folder_path: Path,
     dirs_to_ignore: Optional[List[str]] = None,
-    files_to_ignore: Optional[List[str]] = None
+    files_to_ignore: Optional[List[str]] = None,
+    extensions_to_ignore: Optional[List[str]] = None
 ) -> str:
     """
     Reads content from files in a specified folder, skipping ignored ones.
 
     Args:
         folder_path: The Path object of the folder to read.
-        dirs_to_ignore: A list of directory names to ignore.
-        files_to_ignore: A list of file names to ignore.
+        dirs_to_ignore: A list of directory names to skip.
+        files_to_ignore: A list of file names to skip.
+        extensions_to_ignore: A list of file extensions to skip (e.g., ['py', 'js']).
 
     Returns:
         A string combining all read file contents, prefixed with their paths.
@@ -169,15 +202,18 @@ def read_files_from_folder(
     if not folder_path.exists() or not folder_path.is_dir():
         raise FileNotFoundError(f"Error: Folder path '{folder_path}' does not exist or is not a directory.")
 
-    file_contents: Dict[str, str] = {}
     # Merge default ignore lists with user-provided ones
     _dirs_to_ignore: List[str] = list(set(DEFAULT_IGNORE_DIRS + (dirs_to_ignore or [])))
     _files_to_ignore: List[str] = list(set(DEFAULT_IGNORE_FILES + (files_to_ignore or [])))
+    _extensions_to_ignore: List[str] = [ext.lower().lstrip('.') for ext in (extensions_to_ignore or [])]
 
     logger.info(f"Scanning folder: {folder_path}")
-    logger.info(f"Ignoring directories: {_dirs_to_ignore}")
-    logger.info(f"Ignoring files: {_files_to_ignore}")
+    logger.debug(f"Ignoring directories: {_dirs_to_ignore}")
+    logger.debug(f"Ignoring files: {_files_to_ignore}")
+    if _extensions_to_ignore:
+        logger.debug(f"Ignoring extensions: {_extensions_to_ignore}")
 
+    file_contents: Dict[str, str] = {}
     total_files = 0
     skipped_files = 0
     max_file_size = 1024 * 1024  # 1MB limit per file
@@ -194,6 +230,12 @@ def read_files_from_folder(
             if (any(filename.endswith(ext.lstrip('*')) for ext in _files_to_ignore) or
                 filename.endswith('.md') or
                 filename.startswith('.')):
+                skipped_files += 1
+                continue
+
+            # Skip files with ignored extensions
+            if _extensions_to_ignore and file_path.suffix.lower().lstrip('.') in _extensions_to_ignore:
+                logger.debug(f"Skipping file with ignored extension: {file_path}")
                 skipped_files += 1
                 continue
 
@@ -469,6 +511,11 @@ def main() -> None:
         help="Comma-separated list of file names to skip (e.g., 'package-lock.json,.DS_Store')."
     )
     generate_parser.add_argument(
+        "--extensions-to-ignore",
+        type=str,
+        help="Comma-separated list of file extensions to skip (e.g., 'py,js,css'). Do not include the dot."
+    )
+    generate_parser.add_argument(
         "--additional-context",
         type=str,
         help="Additional textual context about the project to provide to the AI."
@@ -647,12 +694,14 @@ def main() -> None:
         # Process ignore lists from comma-separated strings to lists
         dirs_to_ignore_list: Optional[List[str]] = args.dirs_to_ignore.split(',') if args.dirs_to_ignore else None
         files_to_ignore_list: Optional[List[str]] = args.files_to_ignore.split(',') if args.files_to_ignore else None
+        extensions_to_ignore_list: Optional[List[str]] = args.extensions_to_ignore.split(',') if args.extensions_to_ignore else None
 
         try:
             repository_content: str = read_files_from_folder(
                 target_path,
                 dirs_to_ignore_list,
-                files_to_ignore_list
+                files_to_ignore_list,
+                extensions_to_ignore_list
             )
         except FileNotFoundError as e:
             logger.error(f"❌ {e}")
