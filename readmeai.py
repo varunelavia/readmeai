@@ -10,6 +10,7 @@ This script provides commands to:
 
 import argparse
 import anthropic
+from openai import OpenAI
 import os
 import sys
 import json
@@ -232,8 +233,7 @@ def fetch_anthropic_models(api_key: str) -> List[str]:
 def fetch_openai_models(api_key: str) -> List[str]:
     """Fetch available models from OpenAI API."""
     try:
-        import openai
-        client = openai.OpenAI(api_key=api_key)
+        client = OpenAI(api_key=api_key)
         models = client.models.list()
         return [model.id for model in models.data]
     except Exception as e:
