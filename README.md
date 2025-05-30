@@ -63,6 +63,27 @@ To use README.ai, you'll need an API key from one of the supported providers:
 - **Anthropic**: [Get API Key](https://console.anthropic.com/settings/keys)
 - **Google Gemini**: [Get API Key](https://aistudio.google.com/app/apikey)
 
+### Configure API and Model
+
+After getting your API key, configure it with README.ai:
+
+```bash
+# Configure API key and default API
+readmeai configure --api-key YOUR_API_KEY --default-api gemini
+
+# List available models for your chosen API
+readmeai list-models
+
+# Configure default model
+readmeai configure --default-model models/gemini-1.5-flash
+
+# Navigate to your project directory
+cd /path/to/your/project
+
+# Generate README
+readmeai generate .
+```
+
 ### Using pip
 
 1. Clone the repository:
