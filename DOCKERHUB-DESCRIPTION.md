@@ -34,7 +34,7 @@ This Docker image (`readmeai/readmeai`) provides a versatile Python command-line
 1. **Pull the Image:**
     ```bash
     docker pull readmeai/readmeai:latest 
-    # Or specify a version, e.g., readmeai/readmeai:1.0.0
+    # Or specify a version, e.g., readmeai/readmeai:v1.0.0
     ```
 
 2. **Basic Generation (using Environment Variable for API Key):**
