@@ -31,13 +31,19 @@ This Docker image (`readmeai/readmeai`) provides a versatile Python command-line
 
 ### Quick Start with Docker
 
-1. **Pull the Image:**
+1. **Get API Keys**
+   To use README.ai, you'll need an API key from one of the supported providers:
+   - **OpenAI**: [Get API Key](https://platform.openai.com/api-keys)
+   - **Anthropic**: [Get API Key](https://console.anthropic.com/settings/keys)
+   - **Google Gemini**: [Get API Key](https://aistudio.google.com/app/apikey)
+
+2. **Pull the Image:**
     ```bash
     docker pull readmeai/readmeai:latest 
     # Or specify a version, e.g., readmeai/readmeai:v1.0.0
     ```
 
-2. **Basic Generation (using Environment Variable for API Key):**
+3. **Basic Generation (using Environment Variable for API Key):**
     This example uses Gemini. Replace `--api gemini` and the `API_KEY` with your chosen provider and key.
 
     ```bash
@@ -61,6 +67,8 @@ This Docker image (`readmeai/readmeai`) provides a versatile Python command-line
 ---
 
 ### CLI Usage via Docker
+
+For detailed information about all available commands and options, see the [CLI Reference](https://github.com/varunelavia/readmeai/blob/main/CLI-REFERENCE.md).
 
 The tool uses subcommands: `generate`, `configure`, `list-models`.
 
