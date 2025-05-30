@@ -11,7 +11,7 @@ A powerful command-line tool that automatically generates comprehensive README.m
 - [Usage](#usage)
 - [Examples](#examples)
 - [Commands](#commands)
-- [CLI Reference](#cli-reference)
+- [CLI Reference](#commands)
 - [API Reference](#api-reference)
 - [File Filtering](#file-filtering)
 - [Docker Support](#docker-support)
