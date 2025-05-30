@@ -11,6 +11,7 @@ A powerful command-line tool that automatically generates comprehensive README.m
 - [Usage](#usage)
 - [Examples](#examples)
 - [Commands](#commands)
+- [CLI Reference](#cli-reference)
 - [API Reference](#api-reference)
 - [File Filtering](#file-filtering)
 - [Docker Support](#docker-support)
@@ -53,6 +54,14 @@ readmeai --version
 ```
 
 Now you can run `readmeai` from anywhere in your terminal!
+
+### Get API Keys
+
+To use README.ai, you'll need an API key from one of the supported providers:
+
+- **OpenAI**: [Get API Key](https://platform.openai.com/api-keys)
+- **Anthropic**: [Get API Key](https://console.anthropic.com/settings/keys)
+- **Google Gemini**: [Get API Key](https://aistudio.google.com/app/apikey)
 
 ### Using pip
 
@@ -139,6 +148,8 @@ docker run -v /path/to/your/project:/app/project -e API_KEY=YOUR_API_KEY readmea
 ```
 
 ## Commands
+
+For detailed information about all available commands and options, see the [CLI Reference](CLI-REFERENCE.md).
 
 ### `generate` - Generate README
 
