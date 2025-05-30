@@ -15,10 +15,6 @@ readmeai generate /path/to/project --api gemini --ai-model gemini-pro
 export API_KEY="your-gemini-api-key"
 readmeai generate /path/to/project --api gemini --ai-model gemini-pro
 
-# With service account authentication
-export GOOGLE_APPLICATION_CREDENTIALS="/path/to/service-account.json"
-readmeai generate /path/to/project --api gemini --ai-model gemini-pro
-
 # Skip README backup
 readmeai generate /path/to/project --api gemini --ai-model gemini-pro --skip-readme-backup
 ```
