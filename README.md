@@ -45,7 +45,7 @@ A powerful command-line tool that automatically generates comprehensive README.m
 Run these commands to install README.ai system-wide:
 
 ```bash
-wget https://raw.githubusercontent.com/varunelavia/readmeai/main/readmeai.py
+wget https://raw.githubusercontent.com/varunelavia/readmeai/v1.0.0/readmeai.py
 chmod +x readmeai.py
 sudo mv readmeai.py /usr/local/bin/readmeai
 pip install google-generativeai==0.8.5 anthropic==0.52.1 openai==1.82.1
