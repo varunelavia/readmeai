@@ -9,6 +9,7 @@ A powerful command-line tool that automatically generates comprehensive README.m
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [Usage](#usage)
+- [Examples](#examples)
 - [Commands](#commands)
 - [API Reference](#api-reference)
 - [File Filtering](#file-filtering)
@@ -105,6 +106,8 @@ Generate a README for your project:
 ```bash
 ./readmeai.py generate /path/to/your/project
 ```
+
+For detailed examples of all available commands and options, see [EXAMPLES.md](EXAMPLES.md).
 
 ### Advanced Usage
 
