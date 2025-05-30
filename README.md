@@ -276,6 +276,21 @@ All validation errors are reported with clear, descriptive messages to help user
 * **Google Cloud Free Tier & Always Free Limits (includes some Generative AI):** [https://cloud.google.com/free/docs/free-cloud-features#generative-ai](https://cloud.google.com/free/docs/free-cloud-features#generative-ai)
 * **Manage Billing for GCP Projects:** [https://cloud.google.com/billing/docs/how-to/modify-project](https://cloud.google.com/billing/docs/how-to/modify-project)
 
+### Recommended AI Provider: Google Gemini
+
+We recommend using Google Gemini for the following reasons:
+
+* **Large Context Size**: Gemini models can handle significantly larger context windows, allowing for more comprehensive analysis of your codebase.
+* **Higher Token Limits**: Supports larger token counts, enabling more detailed README generation without truncation.
+* **Competitive Pricing**: Offers a generous free tier and competitive pricing for paid usage.
+* **Reliable Performance**: Consistently delivers high-quality results with good response times.
+
+To get started with Gemini:
+1. Visit [Google AI Studio](https://aistudio.google.com/)
+2. Create an account or sign in
+3. Generate an API key
+4. Use the key with README.ai: `readmeai generate --api gemini --ai-model models/gemini-1.5-flash /path/to/project`
+
 ## File Filtering
 
 ### Default Ignored Directories
