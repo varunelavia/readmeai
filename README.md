@@ -159,6 +159,7 @@ Main command to analyze a codebase and generate a README.
   - Empty lists are not allowed
 - `--additional-context`: Extra context about the project
 - `--readme-filename`: Output filename (default: README.md)
+- `--skip-readme-backup`: Skip backing up existing README file if it exists
 - `--api`: AI service to use (gemini/anthropic/openai)
   - Must be one of the supported APIs
 - `--ai-model`: Specific model to use

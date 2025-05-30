@@ -287,7 +287,7 @@ def read_files_from_folder(
 
     return combined_content
 
-def write_readme(content: str, output_folder: Path, readme_filename: str) -> None:
+def write_readme(content: str, output_folder: Path, readme_filename: str, skip_backup: bool = False) -> None:
     """
     Writes the generated README content to a file.
 
@@ -295,6 +295,7 @@ def write_readme(content: str, output_folder: Path, readme_filename: str) -> Non
         content: The string content to write to the README.
         output_folder: The Path object of the folder where the README will be saved.
         readme_filename: The name of the README file.
+        skip_backup: Whether to skip backing up an existing README file.
 
     Raises:
         IOError: If the file cannot be written.
@@ -303,7 +304,7 @@ def write_readme(content: str, output_folder: Path, readme_filename: str) -> Non
     readme_path = output_folder / readme_filename
     
     # Check if README already exists
-    if readme_path.exists():
+    if readme_path.exists() and not skip_backup:
         backup_path = readme_path.with_suffix(f'.{datetime.now().strftime("%Y%m%d_%H%M%S")}.md')
         try:
             readme_path.rename(backup_path)
@@ -638,6 +639,11 @@ def main() -> None:
         help=f"Name of the README file to generate (default: {DEFAULT_README_FILENAME})."
     )
     generate_parser.add_argument(
+        "--skip-readme-backup",
+        action="store_true",
+        help="Skip backing up existing README file if it exists."
+    )
+    generate_parser.add_argument(
         "--api",
         type=str,
         choices=SUPPORTED_APIS,
@@ -846,7 +852,7 @@ def main() -> None:
             if not generated_text.strip():
                 raise ValueError("The AI returned an empty response. Cannot generate README.")
 
-            write_readme(generated_text, target_path, args.readme_filename)
+            write_readme(generated_text, target_path, args.readme_filename, args.skip_readme_backup)
             logger.info("🎉 README generation process complete!")
 
     except ValueError as e:

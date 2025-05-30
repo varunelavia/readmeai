@@ -91,6 +91,7 @@ docker run --rm \
 * `--api-key <key_string>`: Provide API key directly (overrides API_KEY env var and config).
   - Must be a valid API key for the chosen service
 * `--readme-filename <name.md>`: Output filename (default: README.md).
+* `--skip-readme-backup`: Skip backing up existing README file if it exists.
 * `--additional-context <text>`: Provide extra context to the AI.
 * `--dirs-to-ignore <dir1,dir2>`: Comma-separated directories to ignore.
   - Must be a valid comma-separated list
