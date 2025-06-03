@@ -1,4 +1,4 @@
-# README.ai - AI-Powered README Generator
+# readmeai - AI-Powered README Generator
 
 A powerful command-line tool that automatically generates comprehensive README.md files for your projects using leading AI services (OpenAI, Anthropic, Google Gemini).
 
@@ -12,7 +12,7 @@ A powerful command-line tool that automatically generates comprehensive README.m
 - [Examples](#examples)
 - [Commands](#commands)
 - [CLI Reference](#commands)
-- [API Reference](#api-reference)
+- [Important Links](#important-links)
 - [File Filtering](#file-filtering)
 - [Docker Support](#docker-support)
 - [Contributing](#contributing)
@@ -43,7 +43,7 @@ A powerful command-line tool that automatically generates comprehensive README.m
 
 ### Quick Installation (Linux/macOS)
 
-Run these commands to install README.ai system-wide:
+Run these commands to install readmeai system-wide:
 
 ```bash
 wget https://raw.githubusercontent.com/varunelavia/readmeai/v1.0.0/readmeai.py
@@ -57,7 +57,7 @@ Now you can run `readmeai` from anywhere in your terminal!
 
 ### Get API Keys
 
-To use README.ai, you'll need an API key from one of the supported providers:
+To use readmeai, you'll need an API key from one of the supported providers:
 
 - **OpenAI**: [Get API Key](https://platform.openai.com/api-keys)
 - **Anthropic**: [Get API Key](https://console.anthropic.com/settings/keys)
@@ -65,7 +65,7 @@ To use README.ai, you'll need an API key from one of the supported providers:
 
 ### Configure API and Model
 
-After getting your API key, configure it with README.ai:
+After getting your API key, configure it with readmeai:
 
 ```bash
 # Configure API key and default API
@@ -280,7 +280,7 @@ The tool performs comprehensive validation of all inputs:
 
 All validation errors are reported with clear, descriptive messages to help users correct their inputs.
 
-## API Reference
+## Important Links
 
 ### Supported AI Services
 
@@ -324,7 +324,7 @@ To get started with Gemini:
 1. Visit [Google AI Studio](https://aistudio.google.com/)
 2. Create an account or sign in
 3. Generate an API key
-4. Use the key with README.ai: `readmeai generate --api gemini --ai-model models/gemini-1.5-flash /path/to/project`
+4. Use the key with readmeai: `readmeai generate --api gemini --ai-model models/gemini-1.5-flash /path/to/project`
 
 ## File Filtering
 

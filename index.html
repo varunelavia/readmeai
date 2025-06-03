@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>readmeai - AI-Powered README Generator</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --text-color: #1f2937;
+            --light-bg: #f3f4f6;
+            --border-color: #e5e7eb;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: #ffffff;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 4rem 0;
+            text-align: center;
+        }
+
+        .hero {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background-color: white;
+            color: var(--primary-color);
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            margin: 0 0.5rem;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .cta-button.secondary {
+            background-color: transparent;
+            border: 2px solid white;
+            color: white;
+        }
+
+        .cta-button.secondary:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
+
+        .features {
+            padding: 4rem 0;
+            background-color: var(--light-bg);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .feature-card i {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .section {
+            padding: 4rem 0;
+        }
+
+        .section h2 {
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            color: var(--primary-color);
+        }
+
+        pre {
+            background-color: var(--light-bg);
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        code {
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .toc {
+            background-color: var(--light-bg);
+            padding: 2rem;
+            border-radius: 8px;
+            margin: 2rem 0;
+        }
+
+        .toc ul {
+            list-style: none;
+        }
+
+        .toc li {
+            margin: 0.5rem 0;
+        }
+
+        .toc a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .toc a:hover {
+            text-decoration: underline;
+        }
+
+        .api-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .api-card h3 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .api-card ul {
+            list-style: none;
+        }
+
+        .api-card li {
+            margin: 0.5rem 0;
+        }
+
+        .api-card a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .api-card a:hover {
+            text-decoration: underline;
+        }
+
+        footer {
+            background-color: var(--text-color);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+            
+            .container {
+                padding: 0 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container hero">
+            <h1>readmeai</h1>
+            <p>A powerful command-line tool that automatically generates comprehensive README.md files for your projects using leading AI services (OpenAI, Anthropic, Google Gemini).</p>
+            <div>
+                <a href="#installation" class="cta-button">Installation</a>
+                <a href="https://github.com/varunelavia/readmeai" target="_blank" class="cta-button secondary">Getting Started →</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <section class="section">
+            <div class="toc">
+                <h2>Table of Contents</h2>
+                <ul>
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#tech-stack">Tech Stack/Requirements</a></li>
+                    <li><a href="#installation">Installation</a></li>
+                    <li><a href="#configuration">Configuration</a></li>
+                    <li><a href="#usage">Usage</a></li>
+                    <li><a href="#api-reference">Important Links</a></li>
+                    <li><a href="#docker-support">Docker Support</a></li>
+                    <li><a href="#contributing">Contributing</a></li>
+                    <li><a href="#license">License</a></li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="section features" id="features">
+            <h2>Features</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <i class="fas fa-robot"></i>
+                    <h3>Multi-AI Support</h3>
+                    <p>Generate READMEs using OpenAI (GPT-3.5/GPT-4), Anthropic (Claude), or Google Gemini</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-folder"></i>
+                    <h3>Smart File Analysis</h3>
+                    <p>Automatically scans your codebase while intelligently filtering out irrelevant files</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-cogs"></i>
+                    <h3>Highly Configurable</h3>
+                    <p>Customize file filtering, API settings, and generation parameters</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-sync"></i>
+                    <h3>Retry Mechanism</h3>
+                    <p>Built-in retry logic for API reliability</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fab fa-docker"></i>
+                    <h3>Docker Support</h3>
+                    <p>Run in a containerized environment</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-key"></i>
+                    <h3>Security First</h3>
+                    <p>API key validation and secure storage options</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="tech-stack">
+            <h2>Tech Stack/Requirements</h2>
+            <ul>
+                <li><strong>Python:</strong> 3.10 or higher</li>
+                <li><strong>Dependencies:</strong>
+                    <ul>
+                        <li><code>google-generativeai==0.8.5</code> - Google Gemini API client</li>
+                        <li><code>anthropic==0.52.1</code> - Anthropic Claude API client</li>
+                        <li><code>openai==1.82.1</code> - OpenAI GPT API client</li>
+                    </ul>
+                </li>
+                <li><strong>API Keys:</strong> Required for at least one of the supported AI services</li>
+            </ul>
+        </section>
+
+        <section class="section" id="installation">
+            <h2>Installation</h2>
+            <h3>Quick Installation (Linux/macOS)</h3>
+            <pre><code>wget https://raw.githubusercontent.com/varunelavia/readmeai/v1.0.0/readmeai.py
+chmod +x readmeai.py
+sudo mv readmeai.py /usr/local/bin/readmeai
+pip install google-generativeai==0.8.5 anthropic==0.52.1 openai==1.82.1
+readmeai --version</code></pre>
+        </section>
+
+        <section class="section" id="configuration">
+            <h2>Configuration</h2>
+            <h3>Initial Setup</h3>
+            <pre><code># Configure API key and default settings
+readmeai configure --api-key YOUR_API_KEY --default-api gemini
+
+# List available models for the configured API
+readmeai list-models
+
+# Show current configuration
+readmeai configure-show</code></pre>
+
+            <h3>Configuration Options</h3>
+            <ul>
+                <li><strong>Command Line:</strong> Use flags like <code>--api-key</code>, <code>--default-api</code>, <code>--default-model</code></li>
+                <li><strong>Environment Variables:</strong> Set <code>API_KEY</code> in your environment</li>
+                <li><strong>Config File:</strong> Stored at <code>~/.readmeai/config.json</code></li>
+            </ul>
+        </section>
+
+        <section class="section" id="usage">
+            <h2>Usage</h2>
+            <h3>Basic Usage</h3>
+            <pre><code># Generate README for a project
+readmeai generate /path/to/your/project
+
+# Use specific AI service and model
+readmeai generate /path/to/your/project --api openai --ai-model gpt-4
+
+# Add custom context
+readmeai generate /path/to/your/project --additional-context "This is a machine learning project focused on NLP"</code></pre>
+
+            <h3>File Filtering Options</h3>
+            <pre><code># Only process specific file types
+readmeai generate ./my-project --extensions-to-allow "py,js,ts"
+
+# Ignore specific directories
+readmeai generate ./my-project --dirs-to-ignore "tests,docs,node_modules"
+
+# Ignore specific files
+readmeai generate ./my-project --files-to-ignore "package-lock.json,.env"</code></pre>
+
+            <h3>Command Reference</h3>
+            <ul>
+                <li><code>generate</code>: Generate a README file for a project</li>
+                <li><code>configure</code>: Set up API keys and default settings</li>
+                <li><code>list-models</code>: Show available models for each API</li>
+                <li><code>configure-show</code>: Display current configuration</li>
+                <li><code>configure-reset</code>: Reset configuration settings</li>
+            </ul>
+        </section>
+
+        <section class="section" id="api-reference">
+            <h2>Important Links</h2>
+            <div class="api-card">
+                <h3>OpenAI</h3>
+                <ul>
+                    <li><a href="https://platform.openai.com/login/" target="_blank">Dashboard Login</a></li>
+                    <li><a href="https://platform.openai.com/api-keys" target="_blank">Get API Key</a></li>
+                    <li><a href="https://platform.openai.com/docs" target="_blank">Official Documentation</a></li>
+                </ul>
+            </div>
+            <div class="api-card">
+                <h3>Anthropic (Claude)</h3>
+                <ul>
+                    <li><a href="https://console.anthropic.com/" target="_blank">Console Login</a></li>
+                    <li><a href="https://console.anthropic.com/settings/keys" target="_blank">Get API Key</a></li>
+                    <li><a href="https://docs.anthropic.com/claude/reference/getting-started-with-the-api" target="_blank">Official Documentation</a></li>
+                </ul>
+            </div>
+            <div class="api-card">
+                <h3>Google Gemini</h3>
+                <ul>
+                    <li><a href="https://ai.google.dev/docs" target="_blank">Official Documentation</a></li>
+                    <li><a href="https://aistudio.google.com/app/apikey" target="_blank">Get API Key</a></li>
+                    <li><a href="https://ai.google.dev/pricing" target="_blank">Pricing</a></li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="section" id="docker-support">
+            <h2>Docker Support</h2>
+            <p>View the image on <a href="https://hub.docker.com/r/readmeai/readmeai" target="_blank">Docker Hub</a></p>
+            <pre><code># Pull the Image
+docker pull readmeai/readmeai:latest
+
+# Basic Generation
+docker run --rm \
+  --user "$(id -u):$(id -g)" \
+  -v "/path/to/your/project:/app/project" \
+  -e API_KEY="YOUR_API_KEY" \
+  readmeai/readmeai \
+  generate \
+  --api gemini \
+  --ai-model "gemini-1.5-flash" \
+  "/app/project"</code></pre>
+            <p>For more details about Docker usage, see <a href="DOCKERHUB-DESCRIPTION.md" target="_blank">Docker Hub Description</a>.</p>
+        </section>
+
+        <section class="section" id="contributing">
+            <h2>Contributing</h2>
+            <p>Contributions are welcome! Please feel free to submit a Pull Request.</p>
+        </section>
+
+        <section class="section" id="license">
+            <h2>License</h2>
+            <p>This project is licensed under the MIT License - see the <a href="LICENSE" target="_blank">LICENSE</a> file for details.</p>
+        </section>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>Built with support from OpenAI, Anthropic, and Google AI</p>
+            <p>© 2025 readmeai</p>
+        </div>
+    </footer>
+</body>
+</html>

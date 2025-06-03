@@ -1,6 +1,6 @@
-# README.ai Examples
+# readmeai Examples
 
-This document provides comprehensive examples for using README.ai with different AI providers and commands.
+This document provides comprehensive examples for using readmeai with different AI providers and commands.
 
 ## Basic Usage Examples
 

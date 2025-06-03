@@ -1,4 +1,4 @@
-# README.ai - AI-Powered README Generator (Multi-Provider)
+# readmeai - AI-Powered README Generator (Multi-Provider)
 
 **Automatically generate comprehensive `README.md` files for your projects using your choice of AI: Google Gemini, OpenAI, or Anthropic!**
 
@@ -32,7 +32,7 @@ This Docker image (`readmeai/readmeai`) provides a versatile Python command-line
 ### Quick Start with Docker
 
 1. **Get API Keys**
-   To use README.ai, you'll need an API key from one of the supported providers:
+   To use readmeai, you'll need an API key from one of the supported providers:
    - **OpenAI**: [Get API Key](https://platform.openai.com/api-keys)
    - **Anthropic**: [Get API Key](https://console.anthropic.com/settings/keys)
    - **Google Gemini**: [Get API Key](https://aistudio.google.com/app/apikey)
@@ -278,4 +278,4 @@ We value your feedback and are here to help! If you:
 
 Please reach out to us at [readmeai@proton.me](mailto:readmeai@proton.me) or open an issue on our [GitHub repository](https://github.com/varunelavia/readmeai/issues).
 
-Your feedback helps us make README.ai better for everyone! 
+Your feedback helps us make readmeai better for everyone! 
