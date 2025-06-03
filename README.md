@@ -12,7 +12,7 @@ A powerful command-line tool that automatically generates comprehensive README.m
 - [Examples](#examples)
 - [Commands](#commands)
 - [CLI Reference](#commands)
-- [API Reference](#api-reference)
+- [Important Links](#important-links)
 - [File Filtering](#file-filtering)
 - [Docker Support](#docker-support)
 - [Contributing](#contributing)
@@ -280,7 +280,7 @@ The tool performs comprehensive validation of all inputs:
 
 All validation errors are reported with clear, descriptive messages to help users correct their inputs.
 
-## API Reference
+## Important Links
 
 ### Supported AI Services
 

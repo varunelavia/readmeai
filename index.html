@@ -53,6 +53,35 @@
         .hero p {
             font-size: 1.25rem;
             opacity: 0.9;
+            margin-bottom: 2rem;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background-color: white;
+            color: var(--primary-color);
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            margin: 0 0.5rem;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .cta-button.secondary {
+            background-color: transparent;
+            border: 2px solid white;
+            color: white;
+        }
+
+        .cta-button.secondary:hover {
+            background-color: rgba(255,255,255,0.1);
         }
 
         .features {
@@ -179,6 +208,10 @@
         <div class="container hero">
             <h1>readmeai</h1>
             <p>A powerful command-line tool that automatically generates comprehensive README.md files for your projects using leading AI services (OpenAI, Anthropic, Google Gemini).</p>
+            <div>
+                <a href="#installation" class="cta-button">Installation</a>
+                <a href="https://github.com/varunelavia/readmeai" target="_blank" class="cta-button secondary">Getting Started →</a>
+            </div>
         </div>
     </header>
 
@@ -192,7 +225,7 @@
                     <li><a href="#installation">Installation</a></li>
                     <li><a href="#configuration">Configuration</a></li>
                     <li><a href="#usage">Usage</a></li>
-                    <li><a href="#api-reference">API Reference</a></li>
+                    <li><a href="#api-reference">Important Links</a></li>
                     <li><a href="#docker-support">Docker Support</a></li>
                     <li><a href="#contributing">Contributing</a></li>
                     <li><a href="#license">License</a></li>
@@ -261,8 +294,60 @@ pip install google-generativeai==0.8.5 anthropic==0.52.1 openai==1.82.1
 readmeai --version</code></pre>
         </section>
 
+        <section class="section" id="configuration">
+            <h2>Configuration</h2>
+            <h3>Initial Setup</h3>
+            <pre><code># Configure API key and default settings
+readmeai configure --api-key YOUR_API_KEY --default-api gemini
+
+# List available models for the configured API
+readmeai list-models
+
+# Show current configuration
+readmeai configure-show</code></pre>
+
+            <h3>Configuration Options</h3>
+            <ul>
+                <li><strong>Command Line:</strong> Use flags like <code>--api-key</code>, <code>--default-api</code>, <code>--default-model</code></li>
+                <li><strong>Environment Variables:</strong> Set <code>API_KEY</code> in your environment</li>
+                <li><strong>Config File:</strong> Stored at <code>~/.readmeai/config.json</code></li>
+            </ul>
+        </section>
+
+        <section class="section" id="usage">
+            <h2>Usage</h2>
+            <h3>Basic Usage</h3>
+            <pre><code># Generate README for a project
+readmeai generate /path/to/your/project
+
+# Use specific AI service and model
+readmeai generate /path/to/your/project --api openai --ai-model gpt-4
+
+# Add custom context
+readmeai generate /path/to/your/project --additional-context "This is a machine learning project focused on NLP"</code></pre>
+
+            <h3>File Filtering Options</h3>
+            <pre><code># Only process specific file types
+readmeai generate ./my-project --extensions-to-allow "py,js,ts"
+
+# Ignore specific directories
+readmeai generate ./my-project --dirs-to-ignore "tests,docs,node_modules"
+
+# Ignore specific files
+readmeai generate ./my-project --files-to-ignore "package-lock.json,.env"</code></pre>
+
+            <h3>Command Reference</h3>
+            <ul>
+                <li><code>generate</code>: Generate a README file for a project</li>
+                <li><code>configure</code>: Set up API keys and default settings</li>
+                <li><code>list-models</code>: Show available models for each API</li>
+                <li><code>configure-show</code>: Display current configuration</li>
+                <li><code>configure-reset</code>: Reset configuration settings</li>
+            </ul>
+        </section>
+
         <section class="section" id="api-reference">
-            <h2>API Reference</h2>
+            <h2>Important Links</h2>
             <div class="api-card">
                 <h3>OpenAI</h3>
                 <ul>
@@ -291,6 +376,7 @@ readmeai --version</code></pre>
 
         <section class="section" id="docker-support">
             <h2>Docker Support</h2>
+            <p>View the image on <a href="https://hub.docker.com/r/readmeai/readmeai" target="_blank">Docker Hub</a></p>
             <pre><code># Pull the Image
 docker pull readmeai/readmeai:latest
 
@@ -304,6 +390,7 @@ docker run --rm \
   --api gemini \
   --ai-model "gemini-1.5-flash" \
   "/app/project"</code></pre>
+            <p>For more details about Docker usage, see <a href="DOCKERHUB-DESCRIPTION.md" target="_blank">Docker Hub Description</a>.</p>
         </section>
 
         <section class="section" id="contributing">
