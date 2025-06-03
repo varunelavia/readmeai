@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-README.ai - AI-Powered README Generator
+readmeai - AI-Powered README Generator
 
 A command-line tool that generates comprehensive README.md files for your projects
 using various AI services (OpenAI, Anthropic, Google Gemini).

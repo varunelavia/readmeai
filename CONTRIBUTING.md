@@ -1,6 +1,6 @@
-# Contributing to README.ai
+# Contributing to readmeai
 
-Thank you for your interest in contributing to README.ai! This document provides guidelines and instructions for contributing.
+Thank you for your interest in contributing to readmeai! This document provides guidelines and instructions for contributing.
 
 ## Code of Conduct
 

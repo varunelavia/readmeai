@@ -1,6 +1,6 @@
-# README.ai CLI Reference
+# readmeai CLI Reference
 
-This document provides a detailed reference for all README.ai command-line interface (CLI) commands and options.
+This document provides a detailed reference for all readmeai command-line interface (CLI) commands and options.
 
 ## Global Options
 
